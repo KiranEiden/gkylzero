@@ -1,4 +1,5 @@
 #include <gkyl_moment_priv.h>
+#include <stdio.h>
 
 // initialize field
 void
@@ -19,10 +20,10 @@ moment_field_init(const struct gkyl_moment *mom, const struct gkyl_moment_field 
     mom_fld->limiter == 0 ? GKYL_MONOTONIZED_CENTERED : mom_fld->limiter;
 
   double c = 1/sqrt(epsilon0*mu0);
-  struct gkyl_wv_eqn *maxwell = gkyl_wv_maxwell_new(c,
-    mom_fld->elc_error_speed_fact, mom_fld->mag_error_speed_fact);
+  struct gkyl_wv_eqn *maxwell = mom_fld->maxwell == 0 ? gkyl_wv_maxwell_new(c,
+    mom_fld->elc_error_speed_fact, mom_fld->mag_error_speed_fact) : mom_fld->maxwell;
 
-  fld->maxwell = mom_fld->maxwell == 0 ? gkyl_wv_eqn_acquire(maxwell) : mom_fld->maxwell;
+  fld->maxwell = gkyl_wv_eqn_acquire(maxwell);
   
   int ndim = mom->ndim;
 
