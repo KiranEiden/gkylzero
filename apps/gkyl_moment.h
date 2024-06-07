@@ -49,6 +49,7 @@ struct gkyl_moment_field {
   double epsilon0, mu0;
   double elc_error_speed_fact, mag_error_speed_fact;
 
+  struct gkyl_wv_eqn *maxwell; // equation object
   enum gkyl_wave_limiter limiter; // limiter to use
 
   int evolve; // evolve field? 1-yes, 0-no
