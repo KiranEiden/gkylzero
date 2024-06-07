@@ -22,7 +22,7 @@ moment_field_init(const struct gkyl_moment *mom, const struct gkyl_moment_field 
   struct gkyl_wv_eqn *maxwell = gkyl_wv_maxwell_new(c,
     mom_fld->elc_error_speed_fact, mom_fld->mag_error_speed_fact, false);
 
-  fld->maxwell = gkyl_wv_eqn_acquire(maxwell);
+  fld->maxwell = mom_fld->maxwell == 0 ? gkyl_wv_eqn_acquire(maxwell) : mom_fld->maxwell;
   
   int ndim = mom->ndim;
 
