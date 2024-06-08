@@ -24,6 +24,7 @@ moment_field_init(const struct gkyl_moment *mom, const struct gkyl_moment_field 
     mom_fld->elc_error_speed_fact, mom_fld->mag_error_speed_fact) : mom_fld->maxwell;
 
   fld->maxwell = gkyl_wv_eqn_acquire(maxwell);
+  fld->num_equations = maxwell->num_equations;
   
   int ndim = mom->ndim;
 
@@ -45,9 +46,9 @@ moment_field_init(const struct gkyl_moment *mom, const struct gkyl_moment_field 
       );
 
     // allocate arrays
-    fld->fdup = mkarr(false, 8, app->local_ext.volume);
+    fld->fdup = mkarr(false, fld->num_equations, app->local_ext.volume);
     for (int d=0; d<ndim+1; ++d)
-      fld->f[d] = mkarr(false, 8, app->local_ext.volume);
+      fld->f[d] = mkarr(false, fld->num_equations, app->local_ext.volume);
 
     // set current solution so ICs and IO work properly
     fld->fcurr = fld->f[0];
@@ -81,9 +82,9 @@ moment_field_init(const struct gkyl_moment *mom, const struct gkyl_moment_field 
     );
 
     // allocate arrays
-    fld->f0 = mkarr(false, 8, app->local_ext.volume);
-    fld->f1 = mkarr(false, 8, app->local_ext.volume);
-    fld->fnew = mkarr(false, 8, app->local_ext.volume);
+    fld->f0 = mkarr(false, fld->num_equations, app->local_ext.volume);
+    fld->f1 = mkarr(false, fld->num_equations, app->local_ext.volume);
+    fld->fnew = mkarr(false, fld->num_equations, app->local_ext.volume);
     fld->cflrate = mkarr(false, 1, app->local_ext.volume);
 
     // set current solution so ICs and IO work properly
@@ -206,7 +207,7 @@ moment_field_init(const struct gkyl_moment *mom, const struct gkyl_moment_field 
     long vol = app->skin_ghost.lower_skin[d].volume;
     buff_sz = buff_sz > vol ? buff_sz : vol;
   }
-  fld->bc_buffer = mkarr(false, 8, buff_sz);
+  fld->bc_buffer = mkarr(false, fld->num_equations, buff_sz);
 
   gkyl_wv_eqn_release(maxwell);
 

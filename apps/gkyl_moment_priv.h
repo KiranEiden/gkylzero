@@ -111,6 +111,7 @@ struct moment_field {
   void (*init)(double t, const double *xn, double *fout, void *ctx);
 
   struct gkyl_wv_eqn *maxwell; // pointer to Maxwell eqn obj
+  int num_equations; // number of equations in Maxwell equation object
 
   struct gkyl_array *app_current; // arrays for applied currents
   double t_ramp_curr; // linear ramp for turning on applied currents

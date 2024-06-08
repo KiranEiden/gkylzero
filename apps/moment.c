@@ -162,7 +162,7 @@ gkyl_moment_app_new(struct gkyl_moment *mom)
     for (int i=0; i<ns; ++i)
       max_eqn = int_max(max_eqn, app->species[i].num_equations);
     if (app->has_field)
-      max_eqn = int_max(max_eqn, 8); // maxwell equations have 8 components
+      max_eqn = int_max(max_eqn, app->field.num_equations);
     app->ql = mkarr(false, max_eqn, app->local_ext.volume);
     app->qr = mkarr(false, max_eqn, app->local_ext.volume);
 
@@ -209,7 +209,8 @@ gkyl_moment_app_apply_ic_field(gkyl_moment_app* app, double t0)
   
   app->tcurr = t0;
   int num_quad = app->scheme_type == GKYL_MOMENT_MP ? 4 : 2;
-  gkyl_fv_proj *proj = gkyl_fv_proj_new(&app->grid, num_quad, 8, app->field.init, app->field.ctx);
+  gkyl_fv_proj *proj = gkyl_fv_proj_new(&app->grid, num_quad, app->field.num_equations,
+    app->field.init, app->field.ctx);
   
   gkyl_fv_proj_advance(proj, t0, &app->local, app->field.fcurr);
   gkyl_fv_proj_release(proj);
