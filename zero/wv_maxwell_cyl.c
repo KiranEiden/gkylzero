@@ -67,9 +67,12 @@ rot_to_local(const double *tau1, const double *tau2, const double *norm,
   qlocal[4] = qglobal[3]*tau1[0] + qglobal[4]*tau1[1] + qglobal[5]*tau1[2];
   qlocal[5] = qglobal[3]*tau2[0] + qglobal[4]*tau2[1] + qglobal[5]*tau2[2];
   // Rotate sqrts of metric diagonal (we want q[6] = r for azimuthal direction, 1 otherwise)
-  qlocal[6] = qglobal[6]*norm[0] + qglobal[7]*norm[1] + qglobal[8]*norm[2];
-  qlocal[7] = qglobal[6]*tau1[0] + qglobal[7]*tau1[1] + qglobal[8]*tau1[2];
-  qlocal[8] = qglobal[6]*tau2[0] + qglobal[7]*tau2[1] + qglobal[8]*tau2[2];
+  double n0 = roundf(norm[0]), n1 = roundf(norm[1]), n2 = roundf(norm[2]);
+  double t10 = roundf(tau1[0]), t11 = roundf(tau1[1]), t12 = roundf(tau1[2]);
+  double t20 = roundf(tau2[0]), t21 = roundf(tau2[1]), t22 = roundf(tau2[2]);
+  qlocal[6] = qglobal[6]*n0 + qglobal[7]*n1 + qglobal[8]*n2;
+  qlocal[7] = qglobal[6]*t10 + qglobal[7]*t11 + qglobal[8]*t12;
+  qlocal[8] = qglobal[6]*t20 + qglobal[7]*t21 + qglobal[8]*t22;
 }
 
 static inline void
@@ -85,9 +88,12 @@ rot_to_global(const double *tau1, const double *tau2, const double *norm,
   qglobal[4] = qlocal[3]*norm[1] + qlocal[4]*tau1[1] + qlocal[5]*tau2[1];
   qglobal[5] = qlocal[3]*norm[2] + qlocal[4]*tau1[2] + qlocal[5]*tau2[2];
   // Rotate sqrts of metric diagonal back to original values
-  qglobal[6] = qlocal[6]*norm[0] + qlocal[7]*tau1[0] + qlocal[8]*tau2[0];
-  qglobal[7] = qlocal[6]*norm[7] + qlocal[7]*tau1[1] + qlocal[8]*tau2[1];
-  qglobal[8] = qlocal[6]*norm[2] + qlocal[7]*tau1[2] + qlocal[8]*tau2[2];
+  double n0 = roundf(norm[0]), n1 = roundf(norm[1]), n2 = roundf(norm[2]);
+  double t10 = roundf(tau1[0]), t11 = roundf(tau1[1]), t12 = roundf(tau1[2]);
+  double t20 = roundf(tau2[0]), t21 = roundf(tau2[1]), t22 = roundf(tau2[2]);
+  qglobal[6] = qlocal[6]*n0 + qlocal[7]*t10 + qlocal[8]*t20;
+  qglobal[7] = qlocal[6]*n1 + qlocal[7]*t11 + qlocal[8]*t21;
+  qglobal[8] = qlocal[6]*n2 + qlocal[7]*t12 + qlocal[8]*t22;
 }
 
 static double
