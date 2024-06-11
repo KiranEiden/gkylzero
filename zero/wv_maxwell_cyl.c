@@ -203,14 +203,14 @@ maxwell_cons_to_diag(const struct gkyl_wv_eqn *eqn,
   const double *qin, double *diag)
 {
   // Radius, which our field components are weighted by
-  double r = fabs(q[6]*q[7]*q[8]);
+  double r = fabs(qin[6]*qin[7]*qin[8]);
   double r2 = r*r;
   
   // components of EM energy
   for (int i=0; i<6; ++i) diag[i] = qin[i]*qin[i] / r2;
   
   // The azimuthal components already had implicit 1/r factor due to the basis vector
-  qin[1] *= r2; qin[4] *= r2;
+  diag[1] *= r2; diag[4] *= r2;
 }
 
 struct gkyl_wv_eqn*
