@@ -24,7 +24,7 @@ test_maxwell_basic()
   double Er = 1.0, Ephi = 0.1, Ez = 0.2;
   double Br = 10.0, Bphi = 10.1, Bz = 10.2;
   double r = 0.5;
-  double q[9] = { Er, Ephi, Ez, Br, Bphi, Bz, 1.0, r, 1.0};
+  double q[9] = { r*Er, r*Ephi, r*Ez, r*Br, r*Bphi, r*Bz, 1.0, r, 1.0};
   
   double norm[3][3] =
   {
@@ -126,6 +126,12 @@ test_maxwell_waves()
   double r = 0.5;
   double ql[9] = { 0.0, 1.0, 0.0, 1.0, -0.75, 0.0, 1.0, r, 1.0};
   double qr[9] = { 0.0, -1.0, 0.0, 1.0, 0.75, 0.0, 1.0, r, 1.0};
+  
+  for (int i=0; i < 6; ++i)
+  {
+    ql[i] *= r;
+    qr[i] *= r;
+  }
 
   double norm[3][3] =
   {
