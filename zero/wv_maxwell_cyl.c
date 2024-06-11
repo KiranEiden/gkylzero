@@ -104,12 +104,9 @@ wave(const struct gkyl_wv_eqn *eqn, enum gkyl_wv_flux_type type,
   const struct wv_maxwell_cyl *maxwell = container_of(eqn, struct wv_maxwell_cyl, eqn);
 
   double c = maxwell->c, c1 = 1.0 / c;
-  double rt_g[3] = {0.0};
-  for (int i = 0; i < 3; ++i)
-  {
-    rt_g[i] = 0.5*fabs(ql[i+6] + qr[i+6]);
-  }
-  double rfac = rt_g[1]*rt_g[2], rfac1 = 1.0 / rfac;
+  double rt_g00 = 0.5*(fabs(ql[6]) + fabs(qr[6]));
+  double rfac_l = fabs(ql[7]*ql[8]), rfac_r = fabs(ql[7]*ql[8]);
+  double rfac = 0.5*(rfac_l + rfac_r), rfac1 = 1.0 / rfac;
     
   // compute projections of jump
   double a1 = 0.5*(delta[1]-delta[5]*c*rfac1);
@@ -130,7 +127,7 @@ wave(const struct gkyl_wv_eqn *eqn, enum gkyl_wv_flux_type type,
   w[2] = a2;
   w[4] = a2*c1*rfac1;
   w[5] = -a1*c1*rfac;
-  s[0] = -c / rt_g[0];
+  s[0] = -c / rt_g00;
 
   // wave 2: waves with EV c, c
   w = &waves[1*9];
@@ -138,7 +135,7 @@ wave(const struct gkyl_wv_eqn *eqn, enum gkyl_wv_flux_type type,
   w[2] = a4;
   w[4] = -a4*c1*rfac1;
   w[5] = a3*c1*rfac;
-  s[1] = c / rt_g[0];
+  s[1] = c / rt_g00;
 
   // wave 3: waves with EV 0, 0
   w = &waves[2*9];
@@ -146,7 +143,7 @@ wave(const struct gkyl_wv_eqn *eqn, enum gkyl_wv_flux_type type,
   w[3] = a6;
   s[2] = 0.0;
   
-  return c / rt_g[0];
+  return c / rt_g00;
 }
 
 static void
