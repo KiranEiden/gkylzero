@@ -51,6 +51,7 @@ struct gkyl_moment_field {
 
   struct gkyl_wv_eqn *maxwell; // equation object
   enum gkyl_wave_limiter limiter; // limiter to use
+  enum gkyl_wave_split_type split_type; // edge splitting to use
 
   int evolve; // evolve field? 1-yes, 0-no
 
