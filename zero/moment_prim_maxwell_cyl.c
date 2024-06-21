@@ -13,7 +13,7 @@
 double
 gkyl_maxwell_cyl_max_abs_speed(double c, const double q[9])
 {
-  return c / fabs(q[6]);
+  return fmax(c*fabs(q[6]*q[7]*q[8]), c);
 }
 
 void
@@ -24,10 +24,10 @@ gkyl_maxwell_cyl_flux(double c, const double q[9], double flux[9])
   double g_ii = q[6]*q[6];
 
   flux[ER] = 0.0;
-  flux[EP] = c2/r*q[BZ];
-  flux[EZ] = -c2*r*q[BP]/g_ii;
+  flux[EP] = c2*q[BZ];
+  flux[EZ] = -c2*r*r*q[BP]/g_ii;
   flux[BR] = 0.0;
-  flux[BP] = -q[EZ]/r;
-  flux[BZ] = q[EP]*r/g_ii;
+  flux[BP] = -q[EZ];
+  flux[BZ] = q[EP]*r*r/g_ii;
   flux[6] = flux[7] = flux[8] = 0.0;
 }
