@@ -16,15 +16,15 @@ test_maxwell_basic()
   // speed of light in SI units so tests are non-trivial
   double c = 299792458.0;
   double c2 = c*c;
-  struct gkyl_wv_eqn *maxwell = gkyl_wv_maxwell_cyl_new(c);
+  struct gkyl_wv_eqn *maxwell = gkyl_wv_maxwell_cyl_new(c, WV_MAXWELL_CYL_RP_LAX);
 
   TEST_CHECK( maxwell->num_equations == 9 );
-  TEST_CHECK( maxwell->num_waves == 3 );
+  TEST_CHECK( maxwell->num_waves == 2 );
 
   double Er = 1.0, Ephi = 0.1, Ez = 0.2;
   double Br = 10.0, Bphi = 10.1, Bz = 10.2;
   double r = 0.5;
-  double q[9] = { r*Er, r*Ephi, r*Ez, r*Br, r*Bphi, r*Bz, 1.0, r, 1.0};
+  double q[9] = { Er, Ephi, Ez, Br, Bphi, Bz, 1.0, r, 1.0};
   
   double norm[3][3] =
   {
@@ -51,37 +51,37 @@ test_maxwell_basic()
   {
     {
       0.0,
-      c2/r*q[BZ],
-      -c2*r*q[BP],
+      c2/r*r*q[BZ],
+      -c2*r*r*q[BP],
       
       0.0,
-      -q[EZ]/r,
-      q[EP]*r,
-      
-      0.0,
-      0.0,
-      0.0
-    },
-    {
-      -c2/r*q[BZ],
-      0.0,
-      c2/r*q[BR],
-      
-      q[EZ]/r,
-      0.0,
-      -q[ER]/r,
+      -q[EZ],
+      q[EP]*r*r,
       
       0.0,
       0.0,
       0.0
     },
     {
-      c2*r*q[BP],
-      -c2/r*q[BR],      
+      -c2*q[BZ],
+      0.0,
+      c2*q[BR],
+      
+      q[EZ],
+      0.0,
+      -q[ER],
+      
+      0.0,
+      0.0,
+      0.0
+    },
+    {
+      c2*r*r*q[BP],
+      -c2*q[BR],      
       0.0,
       
-      -q[EP]*r,
-      q[ER]/r,
+      -q[EP]*r*r,
+      q[ER],
       0.0,
       
       0.0,
@@ -121,17 +121,11 @@ test_maxwell_waves()
   // speed of light in SI units so tests are non-trivial
   double c = 299792458.0;
   double c2 = c*c;
-  struct gkyl_wv_eqn *maxwell = gkyl_wv_maxwell_cyl_new(c);
+  struct gkyl_wv_eqn *maxwell = gkyl_wv_maxwell_cyl_new(c, WV_MAXWELL_CYL_RP_EIG);
 
   double r = 0.5;
   double ql[9] = { 0.0, 1.0, 0.0, 1.0, -0.75, 0.0, 1.0, r, 1.0};
   double qr[9] = { 0.0, -1.0, 0.0, 1.0, 0.75, 0.0, 1.0, r, 1.0};
-  
-  for (int i=0; i < 6; ++i)
-  {
-    ql[i] *= r;
-    qr[i] *= r;
-  }
 
   double norm[3][3] =
   {
