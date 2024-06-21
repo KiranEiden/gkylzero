@@ -13,8 +13,8 @@ void
 mapc2p(double t, const double *xc, double* GKYL_RESTRICT xp, void *ctx)
 {
   double r = xc[0], ph = xc[1], z = xc[2];
-  xp[0] = r*cos(ph);
-  xp[1] = r*sin(ph);
+  xp[0] = r;
+  xp[1] = ph;
   xp[2] = z;
 }
 
@@ -43,6 +43,13 @@ evalFieldInit(double t, const double* GKYL_RESTRICT xn, double* GKYL_RESTRICT fo
   fout[8] = 1.0;
 }
 
+void
+write_data(struct gkyl_tm_trigger *iot, gkyl_moment_app *app, double tcurr)
+{
+  if (gkyl_tm_trigger_check_and_bump(iot, tcurr)) 
+    gkyl_moment_app_write(app, tcurr, iot->curr-1);
+}
+
 int
 main(int argc, char **argv)
 {
@@ -57,7 +64,7 @@ main(int argc, char **argv)
     gkyl_mem_debug_set(true);
   }
   
-  struct gkyl_wv_eqn *maxwell_cyl = gkyl_wv_maxwell_cyl_new(299792458.0);
+  struct gkyl_wv_eqn *maxwell_cyl = gkyl_wv_maxwell_cyl_new(1.0, WV_MAXWELL_CYL_RP_LAX);
 
   // VM app
   struct gkyl_moment app_inp = {
@@ -71,8 +78,8 @@ main(int argc, char **argv)
 
     .mapc2p = mapc2p, // mapping of computational to physical space
 
-    .num_periodic_dir = 2,
-    .periodic_dirs = { 2, 3 },
+    .num_periodic_dir = 1,
+    .periodic_dirs = { 3 },
 
     .cfl_frac = 0.9,
 
@@ -82,8 +89,10 @@ main(int argc, char **argv)
       .maxwell = maxwell_cyl,
       .limiter = GKYL_NO_LIMITER,
       .init = evalFieldInit,
-
+      .split_type = GKYL_WAVE_QWAVE,
+      
       .bcx = { GKYL_FIELD_PEC_WALL, GKYL_FIELD_PEC_WALL },
+      .bcy = { GKYL_FIELD_WEDGE, GKYL_FIELD_WEDGE }
     }
   };
 
@@ -95,10 +104,12 @@ main(int argc, char **argv)
 
   // start, end and initial time-step
   double tcurr = 0.0, tend = 2*tperiod;
+  int nframe = 10;
+  struct gkyl_tm_trigger io_trig = { .dt = tend/nframe };
 
   // initialize simulation
   gkyl_moment_app_apply_ic(app, tcurr);
-  gkyl_moment_app_write(app, tcurr, 0);
+  write_data(&io_trig, app, tcurr);
 
   // compute estimate of maximum stable time-step
   double dt = gkyl_moment_app_max_dt(app);
@@ -115,11 +126,12 @@ main(int argc, char **argv)
     }
     tcurr += status.dt_actual;
     dt = status.dt_suggested;
+    write_data(&io_trig, app, tcurr);
 
     step += 1;
   }
 
-  gkyl_moment_app_write(app, tcurr, 1);
+  //gkyl_moment_app_write(app, tcurr, 1);
   gkyl_moment_app_stat_write(app);
 
   struct gkyl_moment_stat stat = gkyl_moment_app_stat(app);
