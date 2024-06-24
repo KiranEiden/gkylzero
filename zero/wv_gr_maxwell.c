@@ -177,9 +177,14 @@ qfluct(const struct gkyl_wv_eqn *eqn, enum gkyl_wv_flux_type type,
   double s0m = fmin(0.0, s[0]), s1m = fmin(0.0, s[1]), s2m = fmin(0.0, s[2]);
   double s0p = fmax(0.0, s[0]), s1p = fmax(0.0, s[1]), s2p = fmax(0.0, s[2]);
 
-  for (int i=0; i<10; ++i) {
+  for (int i=0; i<6; ++i) {
     amdq[i] = s0m*w0[i] + s1m*w1[i] + s2m*w2[i];
     apdq[i] = s0p*w0[i] + s1p*w1[i] + s2p*w2[i];
+  }
+  
+  for (int i=6; i<10; ++i) {
+    amdq[i] = 0.0;
+    apdq[i] = 0.0;
   }
 }
 
