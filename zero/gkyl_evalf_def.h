@@ -13,6 +13,18 @@
 typedef void (*evalf_t)(double t, const double *xn, double *fout, void *ctx);
 
 /**
+ * Type of function with three vector outputs.
+ *
+ * @param t Time at which to evaluate function
+ * @param xn Coordinates for evaluation
+ * @param fout1 First output vector
+ * @param fout2 Second output vector
+ * @param fout3 Third output vector
+ * @param ctx Context for function evaluation. Can be NULL
+ */
+typedef void (*evalf3_t)(double t, const double *xn, double *fout1, double *fout2, double *fout3, void *ctx);
+
+/**
  * Type of function to apply BC
  *
  * @param t Time at which BC is applied

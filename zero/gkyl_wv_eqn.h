@@ -226,6 +226,8 @@ gkyl_wv_eqn_max_speed(const struct gkyl_wv_eqn *eqn, const double *q)
 
 /**
  * Rotate state (conserved/primitive) vector to local tangent-normal coordinate frame.
+ * The tangent and normal vectors should be in the same basis as the vector quantities
+ * in the state (e.g. covariant basis if the contravariant components are stored).
  *
  * @param eqn Equation object
  * @param tau1 Tangent vector
@@ -244,7 +246,9 @@ gkyl_wv_eqn_rotate_to_local(const struct gkyl_wv_eqn* eqn,
 }
 
 /**
- * Rotate state (conserved/primitive) vector to global coordinate frame.
+ * Rotate state (conserved/primitive) vector to global coordinate frame. The tangent
+ * and normal vectors should be in the dual basis to that of the vector quantities
+ * in the state (e.g. contravariant basis if the contravariant components are stored).
  *
  * @param eqn Equation object
  * @param tau1 Tangent vector
