@@ -13,7 +13,7 @@
 double
 gkyl_gr_maxwell_max_abs_speed(const double q[10])
 {
-  return fmax(fabs(q[6] - q[7]), fabs(q[6] + q[7]))
+  return fmax(fabs(q[6] - q[7]), fabs(q[6] + q[7]));
 }
 
 void

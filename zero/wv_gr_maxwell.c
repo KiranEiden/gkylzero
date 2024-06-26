@@ -2,8 +2,8 @@
 #include <math.h>
 
 #include <gkyl_alloc.h>
-#include <gkyl_moment_prim_maxwell.h>
-#include <gkyl_wv_maxwell.h>
+#include <gkyl_moment_prim_gr_maxwell.h>
+#include <gkyl_wv_gr_maxwell.h>
 
 struct wv_gr_maxwell {
   struct gkyl_wv_eqn eqn; // base object
@@ -12,11 +12,11 @@ struct wv_gr_maxwell {
 };
 
 static void
-maxwell_free(const struct gkyl_ref_count *ref)
+gr_maxwell_free(const struct gkyl_ref_count *ref)
 {
   struct gkyl_wv_eqn *base = container_of(ref, struct gkyl_wv_eqn, ref_count);
-  struct wv_maxwell *maxwell = container_of(base, struct wv_maxwell, eqn);
-  gkyl_free(maxwell);
+  struct wv_gr_maxwell *gr_maxwell = container_of(base, struct wv_gr_maxwell, eqn);
+  gkyl_free(gr_maxwell);
 }
 
 static inline void
@@ -37,7 +37,7 @@ riem_to_cons(const struct gkyl_wv_eqn *eqn,
 }
 
 static void
-maxwell_wall(double t, int nc, const double *skin, double * GKYL_RESTRICT ghost, void *ctx)
+gr_maxwell_wall(double t, int nc, const double *skin, double * GKYL_RESTRICT ghost, void *ctx)
 {
   // TODO: double-check for D-field and different geometry
   
@@ -71,7 +71,7 @@ rot_to_local(const double *tau1, const double *tau2, const double *norm,
   qlocal[4] = qglobal[3]*tau1[0] + qglobal[4]*tau1[1] + qglobal[5]*tau1[2];
   qlocal[5] = qglobal[3]*tau2[0] + qglobal[4]*tau2[1] + qglobal[5]*tau2[2];
   // Just copy scalar lapse function
-  qlocal[6] = qlocal[6];
+  qlocal[6] = qglobal[6];
   // Rotate shift vector (beta) to local coordinates
   qlocal[7] = qglobal[7]*norm[0] + qglobal[8]*norm[1] + qglobal[9]*norm[2];
   qlocal[8] = qglobal[7]*tau1[0] + qglobal[8]*tau1[1] + qglobal[9]*tau1[2];
@@ -97,7 +97,7 @@ rot_to_global(const double *tau1, const double *tau2, const double *norm,
   qglobal[4] = qlocal[3]*norm[1] + qlocal[4]*tau1[1] + qlocal[5]*tau2[1];
   qglobal[5] = qlocal[3]*norm[2] + qlocal[4]*tau1[2] + qlocal[5]*tau2[2];
   // Again just copy scalar lapse function
-  qlocal[6] = qlocal[6];
+  qglobal[6] = qlocal[6];
   // Rotate shift vector (beta) to back to global coordinates
   qglobal[7] = qlocal[7]*norm[0] + qlocal[8]*tau1[0] + qlocal[9]*tau2[0];
   qglobal[8] = qlocal[7]*norm[1] + qlocal[8]*tau1[1] + qlocal[9]*tau2[1];
@@ -117,10 +117,10 @@ wave(const struct gkyl_wv_eqn *eqn, enum gkyl_wv_flux_type type,
 
   //double c = maxwell->c, c1 = 1.0/c;
   //double e_fact = maxwell->e_fact, b_fact = maxwell->b_fact;
-  const double lapse = q[6];
-  const double shift1 = q[7];
-  const double shift2 = q[8];
-  const double shift3 = q[9];
+  const double lapse = 0.5*(ql[6] + qr[6]);
+  const double shift1 = 0.5*(ql[7] + qr[7]);
+  const double shift2 = 0.5*(ql[8] + qr[8]);
+  const double shift3 = 0.5*(ql[9] + qr[9]);
   const double ev2 = -(lapse + shift1); // ev1 is 0
   const double ev3 = lapse - shift1;
   const double ev_prod = ev2*ev3;
@@ -192,8 +192,8 @@ static double
 flux_jump(const struct gkyl_wv_eqn *eqn, const double *ql, const double *qr, double *flux_jump)
 {
   double fr[10], fl[10];
-  gkyl_maxwell_flux(ql, fl);
-  gkyl_maxwell_flux(qr, fr);
+  gkyl_gr_maxwell_flux(ql, fl);
+  gkyl_gr_maxwell_flux(qr, fr);
 
   for (int m=0; m<10; ++m) flux_jump[m] = fr[m]-fl[m];
 
@@ -213,7 +213,7 @@ max_speed(const struct gkyl_wv_eqn *eqn, const double *q)
 }
 
 static inline void
-maxwell_cons_to_diag(const struct gkyl_wv_eqn *eqn,
+gr_maxwell_cons_to_diag(const struct gkyl_wv_eqn *eqn,
   const double *qin, double *diag)
 {
   // components of EM energy
@@ -222,36 +222,36 @@ maxwell_cons_to_diag(const struct gkyl_wv_eqn *eqn,
 }
 
 struct gkyl_wv_eqn*
-gkyl_wv_maxwell_new()
+gkyl_wv_gr_maxwell_new()
 {
-  struct wv_maxwell *maxwell = gkyl_malloc(sizeof(struct wv_maxwell));
+  struct wv_gr_maxwell *gr_maxwell = gkyl_malloc(sizeof(struct wv_gr_maxwell));
 
-  maxwell->eqn.type = GKYL_EQN_MAXWELL;
-  maxwell->eqn.num_equations = 10;  
-  maxwell->eqn.num_waves = 3;
-  maxwell->eqn.num_diag = 6; // Dx^2, Dy^2, Dz^2, Bx^2, By^2, Bz^2
+  gr_maxwell->eqn.type = GKYL_EQN_GR_MAXWELL;
+  gr_maxwell->eqn.num_equations = 10;  
+  gr_maxwell->eqn.num_waves = 3;
+  gr_maxwell->eqn.num_diag = 6; // Dx^2, Dy^2, Dz^2, Bx^2, By^2, Bz^2
   
-  //maxwell->c = c;
-  //maxwell->e_fact = e_fact;
-  //maxwell->b_fact = b_fact;
+  //gr_maxwell->c = c;
+  //gr_maxwell->e_fact = e_fact;
+  //gr_maxwell->b_fact = b_fact;
   
-  maxwell->eqn.waves_func = wave;
-  maxwell->eqn.qfluct_func = qfluct;
+  gr_maxwell->eqn.waves_func = wave;
+  gr_maxwell->eqn.qfluct_func = qfluct;
 
-  maxwell->eqn.flux_jump = flux_jump;
-  maxwell->eqn.check_inv_func = check_inv;
-  maxwell->eqn.max_speed_func = max_speed;
-  maxwell->eqn.rotate_to_local_func = rot_to_local;
-  maxwell->eqn.rotate_to_global_func = rot_to_global;
+  gr_maxwell->eqn.flux_jump = flux_jump;
+  gr_maxwell->eqn.check_inv_func = check_inv;
+  gr_maxwell->eqn.max_speed_func = max_speed;
+  gr_maxwell->eqn.rotate_to_local_func = rot_to_local;
+  gr_maxwell->eqn.rotate_to_global_func = rot_to_global;
 
-  maxwell->eqn.cons_to_riem = cons_to_riem;
-  maxwell->eqn.riem_to_cons = riem_to_cons;
+  gr_maxwell->eqn.cons_to_riem = cons_to_riem;
+  gr_maxwell->eqn.riem_to_cons = riem_to_cons;
 
-  maxwell->eqn.wall_bc_func = maxwell_wall;
+  gr_maxwell->eqn.wall_bc_func = gr_maxwell_wall;
 
-  maxwell->eqn.cons_to_diag = maxwell_cons_to_diag;
+  gr_maxwell->eqn.cons_to_diag = gr_maxwell_cons_to_diag;
 
-  maxwell->eqn.ref_count = gkyl_ref_count_init(maxwell_free);
+  gr_maxwell->eqn.ref_count = gkyl_ref_count_init(gr_maxwell_free);
 
-  return &maxwell->eqn;
+  return &gr_maxwell->eqn;
 }

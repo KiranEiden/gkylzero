@@ -10,6 +10,7 @@ enum gkyl_eqn_type {
   GKYL_EQN_TEN_MOMENT, // Ten-moment (with pressure tensor)
   GKYL_EQN_MAXWELL, // Maxwell equations
   GKYL_EQN_MAXWELL_CYL, // Maxwell curl equations in cylindrical coordinates
+  GKYL_EQN_GR_MAXWELL, // Maxwell curl equations in cylindrical coordinates
   GKYL_EQN_MHD,  // Ideal MHD equations
   GKYL_EQN_BURGERS, // Burgers equations
   GKYL_EQN_ADVECTION, // Scalar advection equation
