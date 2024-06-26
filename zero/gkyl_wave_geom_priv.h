@@ -141,9 +141,9 @@ calc_geom_1d(const double *dx, const double *xc, struct gkyl_wave_coord_maps *cm
   cmaps->mapc2p(0.0, xlc, xlp, ctx);
   cmaps->mapc2p(0.0, xrc, xrp, ctx);
   
-  struct gkyl_vec3 e_cov[3];
+  struct gkyl_vec3 e_cov[3] = {gkyl_vec3_zeros(), gkyl_vec3_zeros(), gkyl_vec3_zeros()};
   cmaps->get_cov_basis(0.0, xc, e_cov[0].x, e_cov[1].x, e_cov[2].x, ctx);
-  struct gkyl_vec3 e_con[3];
+  struct gkyl_vec3 e_con[3] = {gkyl_vec3_zeros(), gkyl_vec3_zeros(), gkyl_vec3_zeros()};
   cmaps->get_con_basis(0.0, xc, e_con[0].x, e_con[1].x, e_con[2].x, ctx);
 
   calc_geom_1d_from_nodes(dx, xlp, xrp, cmaps->mapc2p, e_cov, e_con, ctx, geo);
@@ -238,9 +238,9 @@ calc_geom_2d(const double *dx, const double *xc, struct gkyl_wave_coord_maps *cm
   cmaps->mapc2p(0.0, xul_c.x, xul_p.x, ctx);
   cmaps->mapc2p(0.0, xur_c.x, xur_p.x, ctx);
   
-  struct gkyl_vec3 e_cov[3];
+  struct gkyl_vec3 e_cov[3] = {gkyl_vec3_zeros(), gkyl_vec3_zeros(), gkyl_vec3_zeros()};
   cmaps->get_cov_basis(0.0, xc, e_cov[0].x, e_cov[1].x, e_cov[2].x, ctx);
-  struct gkyl_vec3 e_con[3];
+  struct gkyl_vec3 e_con[3] = {gkyl_vec3_zeros(), gkyl_vec3_zeros(), gkyl_vec3_zeros()};
   cmaps->get_con_basis(0.0, xc, e_con[0].x, e_con[1].x, e_con[2].x, ctx);
 
   // need to set the final coordinate to 0.0
@@ -473,9 +473,9 @@ calc_geom_3d(const double *dx, const double *xc, struct gkyl_wave_coord_maps *cm
   for (int i=0; i<8; ++i)
     cmaps->mapc2p(0.0, verts_c[i].x, verts[i].x, ctx);
   
-  struct gkyl_vec3 e_cov[3];
+  struct gkyl_vec3 e_cov[3] = {gkyl_vec3_zeros(), gkyl_vec3_zeros(), gkyl_vec3_zeros()};
   cmaps->get_cov_basis(0.0, xc, e_cov[0].x, e_cov[1].x, e_cov[2].x, ctx);
-  struct gkyl_vec3 e_con[3];
+  struct gkyl_vec3 e_con[3] = {gkyl_vec3_zeros(), gkyl_vec3_zeros(), gkyl_vec3_zeros()};
   cmaps->get_con_basis(0.0, xc, e_con[0].x, e_con[1].x, e_con[2].x, ctx);
   
   calc_geom_3d_from_nodes(dx, verts, cmaps->mapc2p, e_cov, e_con, ctx, geo);
