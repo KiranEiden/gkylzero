@@ -158,10 +158,10 @@ GKYL_CU_DH double euler_surfx_2x_ser_p1(const double *w, const double *dxv, cons
   q_rl[3] = ser_2x_p1_surfx1_eval_quad_node_0_l(rhouz_r); 
   q_rl[4] = ser_2x_p1_surfx1_eval_quad_node_0_l(energy_r); 
 
-  gkyl_wv_eqn_rotate_to_local(wv_eqn, geom_l->tau1[0], geom_l->tau2[0], geom_l->norm[0], q_lr, q_lr_local); 
-  gkyl_wv_eqn_rotate_to_local(wv_eqn, geom_l->tau1[0], geom_l->tau2[0], geom_l->norm[0], q_cl, q_cl_local); 
-  gkyl_wv_eqn_rotate_to_local(wv_eqn, geom_r->tau1[0], geom_r->tau2[0], geom_r->norm[0], q_cr, q_cr_local); 
-  gkyl_wv_eqn_rotate_to_local(wv_eqn, geom_r->tau1[0], geom_r->tau2[0], geom_r->norm[0], q_rl, q_rl_local); 
+  gkyl_wv_eqn_rotate_to_local(wv_eqn, geom_l->tau1_cov[0], geom_l->tau2_cov[0], geom_l->norm_cov[0], q_lr, q_lr_local); 
+  gkyl_wv_eqn_rotate_to_local(wv_eqn, geom_l->tau1_cov[0], geom_l->tau2_cov[0], geom_l->norm_cov[0], q_cl, q_cl_local); 
+  gkyl_wv_eqn_rotate_to_local(wv_eqn, geom_r->tau1_cov[0], geom_r->tau2_cov[0], geom_r->norm_cov[0], q_cr, q_cr_local); 
+  gkyl_wv_eqn_rotate_to_local(wv_eqn, geom_r->tau1_cov[0], geom_r->tau2_cov[0], geom_r->norm_cov[0], q_rl, q_rl_local); 
 
   delta_l[0] = q_cl_local[0] - q_lr_local[0]; 
   delta_l[1] = q_cl_local[1] - q_lr_local[1]; 
@@ -188,10 +188,10 @@ GKYL_CU_DH double euler_surfx_2x_ser_p1(const double *w, const double *dxv, cons
   gkyl_wv_eqn_qfluct(wv_eqn, GKYL_WV_HIGH_ORDER_FLUX, q_lr_local, q_cl_local, waves_l, speeds_l, amdq_l_local, apdq_l_local); 
   gkyl_wv_eqn_qfluct(wv_eqn, GKYL_WV_HIGH_ORDER_FLUX, q_cr_local, q_rl_local, waves_r, speeds_r, amdq_r_local, apdq_r_local); 
 
-  gkyl_wv_eqn_rotate_to_global(wv_eqn, geom_l->tau1[0], geom_l->tau2[0], geom_l->norm[0], amdq_l_local, amdq_l); 
-  gkyl_wv_eqn_rotate_to_global(wv_eqn, geom_l->tau1[0], geom_l->tau2[0], geom_l->norm[0], apdq_l_local, apdq_l); 
-  gkyl_wv_eqn_rotate_to_global(wv_eqn, geom_r->tau1[0], geom_r->tau2[0], geom_r->norm[0], amdq_r_local, amdq_r); 
-  gkyl_wv_eqn_rotate_to_global(wv_eqn, geom_r->tau1[0], geom_r->tau2[0], geom_r->norm[0], apdq_r_local, apdq_r); 
+  gkyl_wv_eqn_rotate_to_global(wv_eqn, geom_l->tau1_con[0], geom_l->tau2_con[0], geom_l->norm_con[0], amdq_l_local, amdq_l); 
+  gkyl_wv_eqn_rotate_to_global(wv_eqn, geom_l->tau1_con[0], geom_l->tau2_con[0], geom_l->norm_con[0], apdq_l_local, apdq_l); 
+  gkyl_wv_eqn_rotate_to_global(wv_eqn, geom_r->tau1_con[0], geom_r->tau2_con[0], geom_r->norm_con[0], amdq_r_local, amdq_r); 
+  gkyl_wv_eqn_rotate_to_global(wv_eqn, geom_r->tau1_con[0], geom_r->tau2_con[0], geom_r->norm_con[0], apdq_r_local, apdq_r); 
 
   amdq_rho_quad_l[0] = amdq_l[0]; 
   apdq_rho_quad_l[0] = apdq_l[0]; 
@@ -236,10 +236,10 @@ GKYL_CU_DH double euler_surfx_2x_ser_p1(const double *w, const double *dxv, cons
   q_rl[3] = ser_2x_p1_surfx1_eval_quad_node_1_l(rhouz_r); 
   q_rl[4] = ser_2x_p1_surfx1_eval_quad_node_1_l(energy_r); 
 
-  gkyl_wv_eqn_rotate_to_local(wv_eqn, geom_l->tau1[0], geom_l->tau2[0], geom_l->norm[0], q_lr, q_lr_local); 
-  gkyl_wv_eqn_rotate_to_local(wv_eqn, geom_l->tau1[0], geom_l->tau2[0], geom_l->norm[0], q_cl, q_cl_local); 
-  gkyl_wv_eqn_rotate_to_local(wv_eqn, geom_r->tau1[0], geom_r->tau2[0], geom_r->norm[0], q_cr, q_cr_local); 
-  gkyl_wv_eqn_rotate_to_local(wv_eqn, geom_r->tau1[0], geom_r->tau2[0], geom_r->norm[0], q_rl, q_rl_local); 
+  gkyl_wv_eqn_rotate_to_local(wv_eqn, geom_l->tau1_cov[0], geom_l->tau2_cov[0], geom_l->norm_cov[0], q_lr, q_lr_local); 
+  gkyl_wv_eqn_rotate_to_local(wv_eqn, geom_l->tau1_cov[0], geom_l->tau2_cov[0], geom_l->norm_cov[0], q_cl, q_cl_local); 
+  gkyl_wv_eqn_rotate_to_local(wv_eqn, geom_r->tau1_cov[0], geom_r->tau2_cov[0], geom_r->norm_cov[0], q_cr, q_cr_local); 
+  gkyl_wv_eqn_rotate_to_local(wv_eqn, geom_r->tau1_cov[0], geom_r->tau2_cov[0], geom_r->norm_cov[0], q_rl, q_rl_local); 
 
   delta_l[0] = q_cl_local[0] - q_lr_local[0]; 
   delta_l[1] = q_cl_local[1] - q_lr_local[1]; 
@@ -266,10 +266,10 @@ GKYL_CU_DH double euler_surfx_2x_ser_p1(const double *w, const double *dxv, cons
   gkyl_wv_eqn_qfluct(wv_eqn, GKYL_WV_HIGH_ORDER_FLUX, q_lr_local, q_cl_local, waves_l, speeds_l, amdq_l_local, apdq_l_local); 
   gkyl_wv_eqn_qfluct(wv_eqn, GKYL_WV_HIGH_ORDER_FLUX, q_cr_local, q_rl_local, waves_r, speeds_r, amdq_r_local, apdq_r_local); 
 
-  gkyl_wv_eqn_rotate_to_global(wv_eqn, geom_l->tau1[0], geom_l->tau2[0], geom_l->norm[0], amdq_l_local, amdq_l); 
-  gkyl_wv_eqn_rotate_to_global(wv_eqn, geom_l->tau1[0], geom_l->tau2[0], geom_l->norm[0], apdq_l_local, apdq_l); 
-  gkyl_wv_eqn_rotate_to_global(wv_eqn, geom_r->tau1[0], geom_r->tau2[0], geom_r->norm[0], amdq_r_local, amdq_r); 
-  gkyl_wv_eqn_rotate_to_global(wv_eqn, geom_r->tau1[0], geom_r->tau2[0], geom_r->norm[0], apdq_r_local, apdq_r); 
+  gkyl_wv_eqn_rotate_to_global(wv_eqn, geom_l->tau1_con[0], geom_l->tau2_con[0], geom_l->norm_con[0], amdq_l_local, amdq_l); 
+  gkyl_wv_eqn_rotate_to_global(wv_eqn, geom_l->tau1_con[0], geom_l->tau2_con[0], geom_l->norm_con[0], apdq_l_local, apdq_l); 
+  gkyl_wv_eqn_rotate_to_global(wv_eqn, geom_r->tau1_con[0], geom_r->tau2_con[0], geom_r->norm_con[0], amdq_r_local, amdq_r); 
+  gkyl_wv_eqn_rotate_to_global(wv_eqn, geom_r->tau1_con[0], geom_r->tau2_con[0], geom_r->norm_con[0], apdq_r_local, apdq_r); 
 
   amdq_rho_quad_l[1] = amdq_l[0]; 
   apdq_rho_quad_l[1] = apdq_l[0]; 

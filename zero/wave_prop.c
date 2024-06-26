@@ -348,8 +348,12 @@ gkyl_wave_prop_advance(gkyl_wave_prop *wv,
             const double *qinl = gkyl_array_cfetch(qin, lidx);
             const double *qinr = gkyl_array_cfetch(qin, ridx);
 
-            gkyl_wv_eqn_rotate_to_local(wv->equation, cg->tau1[dir], cg->tau2[dir], cg->norm[dir], qinl, ql_local);
-            gkyl_wv_eqn_rotate_to_local(wv->equation, cg->tau1[dir], cg->tau2[dir], cg->norm[dir], qinr, qr_local);
+            gkyl_wv_eqn_rotate_to_local(wv->equation,
+              cg->tau1_cov[dir], cg->tau2_cov[dir], cg->norm_cov[dir],
+              qinl, ql_local);
+            gkyl_wv_eqn_rotate_to_local(wv->equation,
+              cg->tau1_cov[dir], cg->tau2_cov[dir], cg->norm_cov[dir],
+              qinr, qr_local);
 
             if (wv->split_type == GKYL_WAVE_QWAVE)
               calc_jump(meqn, ql_local, qr_local, delta);
@@ -375,18 +379,20 @@ gkyl_wave_prop_advance(gkyl_wave_prop *wv,
             double *waves = gkyl_array_fetch(wv->waves, sidx);
             for (int mw=0; mw<mwaves; ++mw)
               // rotate waves back
-              gkyl_wv_eqn_rotate_to_global(wv->equation, 
-                cg->tau1[dir], cg->tau2[dir], cg->norm[dir], &waves_local[mw*meqn], &waves[mw*meqn]
-              );
+              gkyl_wv_eqn_rotate_to_global(wv->equation,
+                cg->tau1_con[dir], cg->tau2_con[dir], cg->norm_con[dir],
+                &waves_local[mw*meqn], &waves[mw*meqn]);
 
             // rotate fluctuations
             double *amdq = gkyl_array_fetch(wv->amdq, sidx);
             gkyl_wv_eqn_rotate_to_global(wv->equation, 
-              cg->tau1[dir], cg->tau2[dir], cg->norm[dir], amdq_local, amdq);
+              cg->tau1_con[dir], cg->tau2_con[dir], cg->norm_con[dir],
+              amdq_local, amdq);
             
             double *apdq = gkyl_array_fetch(wv->apdq, sidx);
-           gkyl_wv_eqn_rotate_to_global(wv->equation, 
-              cg->tau1[dir], cg->tau2[dir], cg->norm[dir], apdq_local, apdq);
+            gkyl_wv_eqn_rotate_to_global(wv->equation, 
+              cg->tau1_con[dir], cg->tau2_con[dir], cg->norm_con[dir],
+              apdq_local, apdq);
           }
           
           cfla = calc_cfla(mwaves, cfla, dtdx/cg->kappa, s);

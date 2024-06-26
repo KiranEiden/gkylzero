@@ -129,10 +129,10 @@ GKYL_CU_DH double euler_surfx_1x_ser_p1(const double *w, const double *dxv, cons
   double q_cl_local[5] = {0.0}; 
   double q_cr_local[5] = {0.0}; 
   double q_rl_local[5] = {0.0}; 
-  gkyl_wv_eqn_rotate_to_local(wv_eqn, geom_l->tau1[0], geom_l->tau2[0], geom_l->norm[0], q_lr, q_lr_local); 
-  gkyl_wv_eqn_rotate_to_local(wv_eqn, geom_l->tau1[0], geom_l->tau2[0], geom_l->norm[0], q_cl, q_cl_local); 
-  gkyl_wv_eqn_rotate_to_local(wv_eqn, geom_r->tau1[0], geom_r->tau2[0], geom_r->norm[0], q_cr, q_cr_local); 
-  gkyl_wv_eqn_rotate_to_local(wv_eqn, geom_r->tau1[0], geom_r->tau2[0], geom_r->norm[0], q_rl, q_rl_local); 
+  gkyl_wv_eqn_rotate_to_local(wv_eqn, geom_l->tau1_cov[0], geom_l->tau2_cov[0], geom_l->norm_cov[0], q_lr, q_lr_local); 
+  gkyl_wv_eqn_rotate_to_local(wv_eqn, geom_l->tau1_cov[0], geom_l->tau2_cov[0], geom_l->norm_cov[0], q_cl, q_cl_local); 
+  gkyl_wv_eqn_rotate_to_local(wv_eqn, geom_r->tau1_cov[0], geom_r->tau2_cov[0], geom_r->norm_cov[0], q_cr, q_cr_local); 
+  gkyl_wv_eqn_rotate_to_local(wv_eqn, geom_r->tau1_cov[0], geom_r->tau2_cov[0], geom_r->norm_cov[0], q_rl, q_rl_local); 
 
   double delta_l[5] = {0.0}; 
   double delta_r[5] = {0.0}; 
@@ -174,10 +174,10 @@ GKYL_CU_DH double euler_surfx_1x_ser_p1(const double *w, const double *dxv, cons
   double apdq_l[5] = {0.0}; 
   double amdq_r[5] = {0.0}; 
   double apdq_r[5] = {0.0}; 
-  gkyl_wv_eqn_rotate_to_global(wv_eqn, geom_l->tau1[0], geom_l->tau2[0], geom_l->norm[0], amdq_l_local, amdq_l); 
-  gkyl_wv_eqn_rotate_to_global(wv_eqn, geom_l->tau1[0], geom_l->tau2[0], geom_l->norm[0], apdq_l_local, apdq_l); 
-  gkyl_wv_eqn_rotate_to_global(wv_eqn, geom_r->tau1[0], geom_r->tau2[0], geom_r->norm[0], amdq_r_local, amdq_r); 
-  gkyl_wv_eqn_rotate_to_global(wv_eqn, geom_r->tau1[0], geom_r->tau2[0], geom_r->norm[0], apdq_r_local, apdq_r); 
+  gkyl_wv_eqn_rotate_to_global(wv_eqn, geom_l->tau1_con[0], geom_l->tau2_con[0], geom_l->norm_con[0], amdq_l_local, amdq_l); 
+  gkyl_wv_eqn_rotate_to_global(wv_eqn, geom_l->tau1_con[0], geom_l->tau2_con[0], geom_l->norm_con[0], apdq_l_local, apdq_l); 
+  gkyl_wv_eqn_rotate_to_global(wv_eqn, geom_r->tau1_con[0], geom_r->tau2_con[0], geom_r->norm_con[0], amdq_r_local, amdq_r); 
+  gkyl_wv_eqn_rotate_to_global(wv_eqn, geom_r->tau1_con[0], geom_r->tau2_con[0], geom_r->norm_con[0], apdq_r_local, apdq_r); 
 
   Ghat_rho_l = 0.3061862178478972*rho_l[1]*uxl_r-0.3061862178478972*rho_c[1]*uxl_r+0.1767766952966369*rho_l[0]*uxl_r+0.1767766952966369*rho_c[0]*uxl_r+0.3061862178478972*rho_l[1]*uxc_l-0.3061862178478972*rho_c[1]*uxc_l+0.1767766952966369*rho_l[0]*uxc_l+0.1767766952966369*rho_c[0]*uxc_l-0.5*apdq_l[0]+0.5*amdq_l[0]; 
   Ghat_rhoux_l = 0.5*Ghat_rho_l*uxl_r+0.5*Ghat_rho_l*uxc_l+0.5*pl_r+0.5*pc_l-0.5*apdq_l[1]+0.5*amdq_l[1]; 
