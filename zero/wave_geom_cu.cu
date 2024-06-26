@@ -39,7 +39,7 @@ gkyl_wave_geom_cu_dev_from_coord_flag(const struct gkyl_rect_grid *grid, struct 
 // CPU interface to create and track a GPU object
 struct gkyl_wave_geom*
 gkyl_wave_geom_cu_dev_from_coord_maps(const struct gkyl_rect_grid *grid, struct gkyl_range *range,
-  const struct gkyl_wave_coord_maps *cmaps, void *ctx)
+  struct gkyl_wave_coord_maps *cmaps, void *ctx)
 {
   struct gkyl_wave_geom *wg =(struct gkyl_wave_geom*) gkyl_malloc(sizeof(struct gkyl_wave_geom));
 

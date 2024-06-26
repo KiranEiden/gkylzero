@@ -52,7 +52,7 @@ gkyl_wave_geom_from_coord_flag(const struct gkyl_rect_grid *grid, struct gkyl_ra
 
 struct gkyl_wave_geom*
 gkyl_wave_geom_from_coord_maps(const struct gkyl_rect_grid *grid, struct gkyl_range *range,
-  const struct gkyl_wave_coord_maps *cmaps, void *ctx, bool use_gpu)
+  struct gkyl_wave_coord_maps *cmaps, void *ctx, bool use_gpu)
 {
 #ifdef GKYL_HAVE_CUDA
   if(use_gpu) {
