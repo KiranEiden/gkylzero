@@ -9,7 +9,6 @@
 #include <gkyl_evalf_def.h>
 #include <gkyl_range.h>
 #include <gkyl_util.h>
-#include <stdio.h>
 
 /**
  * Free wave geometry object.
@@ -98,6 +97,7 @@ gkyl_wave_coord_maps_from_flag(enum gkyl_wave_coord_flag cflag, struct gkyl_wave
   }
 }
 
+// The vector to transform and the new basis vectors must be represented in the same basis
 static inline struct gkyl_vec3
 gkyl_vec3_change_basis(const struct gkyl_vec3 v, const struct gkyl_vec3 e[3])
 {
