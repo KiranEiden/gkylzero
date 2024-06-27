@@ -2,12 +2,16 @@
 
 #include <gkyl_wv_eqn.h>
 
+// Type of Riemann solver to use:
+enum gkyl_wv_gr_maxwell_rp {
+  WV_GR_MAXWELL_RP_EIG = 0, // Solve eigensystem to find fluctuations (default)
+  WV_GR_MAXWELL_RP_LAX // Lax fluxes
+};
+
 /**
- * Create a new maxwell equation object.
+ * Create a new GR Maxwell equation object.
  * 
- * @param c_speed Speed of light
- * @param e_fact Factor of light-speed for electric field correction
- * @param b_fact Factor of light-speed for magnetic field correction
- * @return Pointer to Maxwell equation object.
+ * @param rp_type Type of Riemann solver to use 
+ * @return Pointer to GR Maxwell equation object.
  */
-struct gkyl_wv_eqn* gkyl_wv_gr_maxwell_new();
+struct gkyl_wv_eqn* gkyl_wv_gr_maxwell_new(enum gkyl_wv_gr_maxwell_rp rp_type);

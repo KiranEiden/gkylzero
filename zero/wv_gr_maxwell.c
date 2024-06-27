@@ -109,6 +109,69 @@ rot_to_global(const double *tau1, const double *tau2, const double *norm,
 }
 
 static double
+flux_jump(const struct gkyl_wv_eqn *eqn, const double *ql, const double *qr, double *flux_jump)
+{
+  double fr[10], fl[10];
+  gkyl_gr_maxwell_flux(ql, fl);
+  gkyl_gr_maxwell_flux(qr, fr);
+
+  for (int m=0; m<10; ++m) flux_jump[m] = fr[m]-fl[m];
+
+  return fmax(gkyl_gr_maxwell_max_abs_speed(ql), gkyl_gr_maxwell_max_abs_speed(qr));
+}
+
+static double
+wave_lax(const struct gkyl_wv_eqn *eqn, enum gkyl_wv_flux_type type,
+  const double *delta, const double *ql, const double *qr, 
+  double *waves, double *s)
+{
+  double df[10];
+  flux_jump(eqn, ql, qr, df);
+  double max_spd_l = fmax(fabs(ql[6] - ql[7]), fabs(ql[6] + ql[7]));
+  double max_spd_r = fmax(fabs(qr[6] - qr[7]), fabs(qr[6] + qr[7]));
+  double max_spd = fmax(max_spd_l, max_spd_r);
+  
+  double *w0 = &waves[0]; double *w1 = &waves[10];
+  
+  for (int i = 0; i < 6; ++i)
+  {
+    w0[i] = 0.5*((qr[i] - ql[i]) - df[i]/max_spd);
+    w1[i] = 0.5*((qr[i] - ql[i]) + df[i]/max_spd);
+  }
+  
+  for (int i = 6; i < 10; ++i)
+  {
+    w0[i] = w1[i] = 0.0;
+  }
+  
+  s[0] = -max_spd;
+  s[1] = max_spd;
+
+  return max_spd;
+}
+
+static void
+qfluct_lax(const struct gkyl_wv_eqn *eqn, enum gkyl_wv_flux_type type,
+  const double *ql, const double *qr, const double *waves, const double *s,
+  double *amdq, double *apdq)
+{
+  const double *w0 = &waves[0], *w1 = &waves[10];
+  double s0m = fmin(0.0, s[0]), s1m = fmin(0.0, s[1]);
+  double s0p = fmax(0.0, s[0]), s1p = fmax(0.0, s[1]);
+
+  for (int i=0; i<6; ++i)
+  {
+    amdq[i] = s0m*w0[i] + s1m*w1[i];
+    apdq[i] = s0p*w0[i] + s1p*w1[i];
+  }
+  for (int i=6; i<10; ++i)
+  {
+    amdq[i] = 0.0;
+    apdq[i] = 0.0;
+  }
+}
+
+static double
 wave(const struct gkyl_wv_eqn *eqn, enum gkyl_wv_flux_type type,
   const double *delta, const double *ql, const double *qr, 
   double *waves, double *s)
@@ -188,18 +251,6 @@ qfluct(const struct gkyl_wv_eqn *eqn, enum gkyl_wv_flux_type type,
   }
 }
 
-static double
-flux_jump(const struct gkyl_wv_eqn *eqn, const double *ql, const double *qr, double *flux_jump)
-{
-  double fr[10], fl[10];
-  gkyl_gr_maxwell_flux(ql, fl);
-  gkyl_gr_maxwell_flux(qr, fr);
-
-  for (int m=0; m<10; ++m) flux_jump[m] = fr[m]-fl[m];
-
-  return fmax(gkyl_gr_maxwell_max_abs_speed(ql), gkyl_gr_maxwell_max_abs_speed(qr));
-}
-
 static bool
 check_inv(const struct gkyl_wv_eqn *eqn, const double *q)
 {
@@ -222,21 +273,30 @@ gr_maxwell_cons_to_diag(const struct gkyl_wv_eqn *eqn,
 }
 
 struct gkyl_wv_eqn*
-gkyl_wv_gr_maxwell_new()
+gkyl_wv_gr_maxwell_new(enum gkyl_wv_gr_maxwell_rp rp_type)
 {
   struct wv_gr_maxwell *gr_maxwell = gkyl_malloc(sizeof(struct wv_gr_maxwell));
 
   gr_maxwell->eqn.type = GKYL_EQN_GR_MAXWELL;
-  gr_maxwell->eqn.num_equations = 10;  
-  gr_maxwell->eqn.num_waves = 3;
+  gr_maxwell->eqn.num_equations = 10; 
   gr_maxwell->eqn.num_diag = 6; // Dx^2, Dy^2, Dz^2, Bx^2, By^2, Bz^2
+  
+  if(rp_type == WV_GR_MAXWELL_RP_EIG)
+  {
+    gr_maxwell->eqn.num_waves = 3;
+    gr_maxwell->eqn.waves_func = wave;
+    gr_maxwell->eqn.qfluct_func = qfluct;
+  }
+  else if(rp_type == WV_GR_MAXWELL_RP_LAX)
+  {
+    gr_maxwell->eqn.num_waves = 2;
+    gr_maxwell->eqn.waves_func = wave_lax;
+    gr_maxwell->eqn.qfluct_func = qfluct_lax;
+  }
   
   //gr_maxwell->c = c;
   //gr_maxwell->e_fact = e_fact;
   //gr_maxwell->b_fact = b_fact;
-  
-  gr_maxwell->eqn.waves_func = wave;
-  gr_maxwell->eqn.qfluct_func = qfluct;
 
   gr_maxwell->eqn.flux_jump = flux_jump;
   gr_maxwell->eqn.check_inv_func = check_inv;
