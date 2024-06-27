@@ -13,8 +13,8 @@ void
 mapc2p(double t, const double *xc, double* GKYL_RESTRICT xp, void *ctx)
 {
   double r = xc[0], ph = xc[1], z = xc[2];
-  xp[0] = r;
-  xp[1] = ph;
+  xp[0] = r*cos(ph);
+  xp[1] = r*sin(ph);
   xp[2] = z;
 }
 
@@ -38,9 +38,8 @@ evalFieldInit(double t, const double* GKYL_RESTRICT xn, double* GKYL_RESTRICT fo
   fout[3] = 0.0;
   fout[4] = 0.0;
   fout[5] = 0.0;
-  fout[6] = 1.0;
-  fout[7] = r;
-  fout[8] = 1.0;
+  fout[6] = 0.0;
+  fout[7] = 0.0;
 }
 
 void
@@ -76,23 +75,22 @@ main(int argc, char **argv)
     .upper = { 5.0, 2*M_PI, 5.0 },
     .cells = { NX, NY, NZ },
 
-    .mapc2p = mapc2p, // mapping of computational to physical space
+    //.mapc2p = mapc2p, // mapping of computational to physical space
+    .coord_flag = WAVE_COORD_CYL,
 
-    .num_periodic_dir = 1,
-    .periodic_dirs = { 3 },
+    .num_periodic_dir = 2,
+    .periodic_dirs = { 2, 3 },
 
     .cfl_frac = 0.9,
 
     .field = {
       .epsilon0 = 1.0, .mu0 = 1.0,
       .evolve = 1,
-      .maxwell = maxwell_cyl,
       .limiter = GKYL_NO_LIMITER,
       .init = evalFieldInit,
       .split_type = GKYL_WAVE_QWAVE,
       
       .bcx = { GKYL_FIELD_PEC_WALL, GKYL_FIELD_PEC_WALL },
-      .bcy = { GKYL_FIELD_WEDGE, GKYL_FIELD_WEDGE }
     }
   };
 
