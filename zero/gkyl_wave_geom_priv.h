@@ -72,31 +72,6 @@ get_sph_unit_basis(double t, const double *xc, double *e1, double *e2, double *e
   e3[0] = -sinph; e3[1] = cosph; e3[2] = 0.0;
 }
 
-static void
-gkyl_wave_coord_maps_from_flag(enum gkyl_wave_coord_flag cflag, struct gkyl_wave_coord_maps *cmaps)
-{
-  switch(cflag)
-  {
-    case WAVE_COORD_CART:
-      cmaps->mapc2p = nomapc2p;
-      cmaps->get_cov_basis = get_standard_basis;
-      cmaps->get_con_basis = get_standard_basis;
-      break;
-      
-    case WAVE_COORD_CYL:
-      cmaps->mapc2p = mapc2p_cyl;
-      cmaps->get_cov_basis = get_cyl_unit_basis;
-      cmaps->get_con_basis = get_cyl_unit_basis;
-      break;
-      
-    case WAVE_COORD_SPH:
-      cmaps->mapc2p = mapc2p_sph;
-      cmaps->get_cov_basis = get_sph_unit_basis;
-      cmaps->get_con_basis = get_sph_unit_basis;
-      break;
-  }
-}
-
 // The vector to transform and the new basis vectors must be represented in the same basis
 static inline struct gkyl_vec3
 gkyl_vec3_change_basis(const struct gkyl_vec3 v, const struct gkyl_vec3 e[3])

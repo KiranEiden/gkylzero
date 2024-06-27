@@ -40,6 +40,31 @@ gkyl_wave_geom_new(const struct gkyl_rect_grid *grid, struct gkyl_range *range,
   return wg;
 }
 
+void
+gkyl_wave_coord_maps_from_flag(enum gkyl_wave_coord_flag cflag, struct gkyl_wave_coord_maps *cmaps)
+{
+  switch(cflag)
+  {
+    case WAVE_COORD_CART:
+      cmaps->mapc2p = nomapc2p;
+      cmaps->get_cov_basis = get_standard_basis;
+      cmaps->get_con_basis = get_standard_basis;
+      break;
+      
+    case WAVE_COORD_CYL:
+      cmaps->mapc2p = mapc2p_cyl;
+      cmaps->get_cov_basis = get_cyl_unit_basis;
+      cmaps->get_con_basis = get_cyl_unit_basis;
+      break;
+      
+    case WAVE_COORD_SPH:
+      cmaps->mapc2p = mapc2p_sph;
+      cmaps->get_cov_basis = get_sph_unit_basis;
+      cmaps->get_con_basis = get_sph_unit_basis;
+      break;
+  }
+}
+
 struct gkyl_wave_geom*
 gkyl_wave_geom_from_coord_flag(const struct gkyl_rect_grid *grid, struct gkyl_range *range,
   enum gkyl_wave_coord_flag cflag, void *ctx, bool use_gpu)

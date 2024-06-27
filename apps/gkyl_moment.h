@@ -5,6 +5,7 @@
 #include <gkyl_mp_scheme.h>
 #include <gkyl_util.h>
 #include <gkyl_wave_prop.h>
+#include <gkyl_wave_geom.h>
 #include <gkyl_wv_eqn.h>
 
 #include <time.h>
@@ -112,6 +113,9 @@ struct gkyl_moment {
   // coordinates and on output xp are the corresponding physical space
   // coordinates.
   void (*mapc2p)(double t, const double *xc, double *xp, void *ctx);
+  // Alternate ways of setting mapc2p and basis for vector quantities
+  enum gkyl_wave_coord_flag coord_flag;
+  struct gkyl_wave_coord_maps coord_maps;
 
   double cfl_frac; // CFL fraction to use
 

@@ -75,9 +75,18 @@ gkyl_moment_app_new(struct gkyl_moment *mom)
     gkyl_rect_decomp_release(rect_decomp);
   }
 
-  skin_ghost_ranges_init(&app->skin_ghost, &app->global_ext, ghost);  
+  skin_ghost_ranges_init(&app->skin_ghost, &app->global_ext, ghost);
   
-  app->c2p_ctx = app->mapc2p = 0;  
+  bool has_coord_maps = mom->coord_maps.mapc2p && mom->coord_maps.get_cov_basis
+    && mom->coord_maps.get_con_basis;
+  if (has_coord_maps) {
+    app->mapc2p = mom->coord_maps.mapc2p;
+  }
+  else if (mom->coord_flag) {
+    gkyl_wave_coord_maps_from_flag(mom->coord_flag, &mom->coord_maps);
+    app->mapc2p = mom->coord_maps.mapc2p;
+  }
+  app->c2p_ctx = app->mapc2p = 0;
   app->has_mapc2p = mom->mapc2p ? true : false;
 
   if (app->has_mapc2p) {
@@ -104,8 +113,18 @@ gkyl_moment_app_new(struct gkyl_moment *mom)
   }
 
   // create geometry object (no GPU support in fluids right now JJ: 11/26/23)
-  app->geom = gkyl_wave_geom_new(&app->grid, &app->local_ext,
-    app->mapc2p, app->c2p_ctx, false);
+  if (has_coord_maps) {
+    app->geom = gkyl_wave_geom_from_coord_maps(&app->grid, &app->local_ext,
+      &mom->coord_maps, app->c2p_ctx, false);
+  }
+  else if (mom->coord_flag) {
+    app->geom = gkyl_wave_geom_from_coord_flag(&app->grid, &app->local_ext,
+      mom->coord_flag, app->c2p_ctx, false);
+  }
+  else {
+    app->geom = gkyl_wave_geom_new(&app->grid, &app->local_ext,
+      app->mapc2p, app->c2p_ctx, false);
+  }
 
   double cfl_frac = mom->cfl_frac == 0 ? 0.95 : mom->cfl_frac;
   app->cfl = 1.0*cfl_frac;

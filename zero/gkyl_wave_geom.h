@@ -58,13 +58,22 @@ struct gkyl_wave_geom {
 struct gkyl_wave_geom*
 gkyl_wave_geom_new(const struct gkyl_rect_grid *grid,
   struct gkyl_range *range, evalf_t mapc2p, void *ctx, bool use_gpu);
-  
+
+/**
+ * Set components of coordinate mapping struct based on predefined coordinate flag.
+ *
+ * @param cflag Flag for predefined coordinate system
+ * @param cmaps Pointer to mapping struct to set up
+ */
+void
+gkyl_wave_coord_maps_from_flag(enum gkyl_wave_coord_flag cflag, struct gkyl_wave_coord_maps *cmaps);
+
 /**
  * Create a new wave geometry object from coordinate system flag.
  *
  * @param grid Grid on which geometry lives
  * @param range Range on which geometry should be constructed
- * @param cflag Flag for predefined coordinate system -- sets mapc2p and basis vectors.
+ * @param cflag Flag for predefined coordinate system -- sets mapc2p and basis vectors
  * @param ctx Context for use in mapping
  */
 struct gkyl_wave_geom*
