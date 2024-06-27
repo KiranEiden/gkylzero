@@ -8,7 +8,7 @@
 
 // Spatial coordinate system flag
 enum gkyl_wave_coord_flag {
-  WAVE_COORD_CART = 0, // 3D Cartesian
+  WAVE_COORD_CART = 0, // Cartesian (default)
   WAVE_COORD_CYL, // Cylindrical (r, phi, z) with unit basis; 2D polar if ndim = 2
   WAVE_COORD_SPH, // Spherical (r, theta, phi) with unit basis
   //WAVE_COORD_SCHWARZ, // Schwarzschild coordinates
