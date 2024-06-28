@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <math.h>
+#include <stdio.h>
 
 #include <gkyl_alloc.h>
 #include <gkyl_moment_prim_gr_maxwell.h>
@@ -188,10 +189,14 @@ wave(const struct gkyl_wv_eqn *eqn, enum gkyl_wv_flux_type type,
   const double ev3 = lapse - shift1;
   const double ev_prod = ev2*ev3;
   const double s2sq_s3sq = shift2*shift2 + shift3*shift3;
+  const double ls3sq_s1s2sq = lapse*lapse * shift3*shift3 + shift1*shift1 * shift2*shift2;
+  
+  // TODO: need to handle cases wher ev2 = 0, ev3 = 0, shift1 = 0, shift2 = shift3 = 0
+  // Do we need to worry about the waves with speed 0?
     
   // compute projections of jump
-  const double a1 = ((-shift3/s2sq_s3sq)*delta[0] + (shift1*shift2/(lapse*s2sq_s3sq))*delta[3]);
-  const double a2 = ((shift2/s2sq_s3sq)*delta[0] + (shift1*shift3/(lapse*s2sq_s3sq))*delta[3]);
+  const double a1 = ((-shift3/(shift1*ev_prod*s2sq_s3sq))*delta[0] + (shift2/(lapse*ev_prod*s2sq_s3sq))*delta[3]);
+  const double a2 = ((shift2/(shift1*ev_prod*s2sq_s3sq))*delta[0] + (shift3/(lapse*ev_prod*s2sq_s3sq))*delta[3]);
   const double a3 = 0.5*((shift3/ev2)*delta[0] + delta[2] + (shift2/ev2)*delta[3] + delta[4]);
   const double a4 = 0.5*((-shift2/ev2)*delta[0] - delta[1] + (shift3/ev2)*delta[3] + delta[5]);
   const double a5 = 0.5*((-shift3/ev3)*delta[0] - delta[2] + (shift2/ev3)*delta[3] + delta[4]);
@@ -204,12 +209,12 @@ wave(const struct gkyl_wv_eqn *eqn, enum gkyl_wv_flux_type type,
 
   // Two waves with EV 0
   w = &waves[0*10];
-  w[0] = -shift3*a1 + shift2*a2;
-  w[1] = (shift2*shift3)/shift1 * (a1 + (lapse*lapse*shift3/shift2 + shift1*shift1*shift2/shift3)/ev_prod*a2);
-  w[2] = (shift2*shift3)/shift1 * (-(lapse*lapse*shift2/shift3 + shift1*shift1*shift3/shift2)/ev_prod*a1 + a2);
-  w[3] = lapse/shift1 * (shift2*a1 + shift3*a2);
-  w[4] = lapse * s2sq_s3sq / ev_prod * a1;
-  w[5] = lapse * s2sq_s3sq / ev_prod * a2;
+  w[0] = (-shift1*shift3*ev_prod)*a1 + (shift1*shift2*ev_prod)*a2;
+  w[1] = (-shift2*shift3*ev_prod)*a1 + ls3sq_s1s2sq*a2;
+  w[2] = -ls3sq_s1s2sq*a1 + (shift2*shift3*ev_prod)*a2;
+  w[3] = lapse * ev_prod * (shift2*a1 + shift3*a2);
+  w[4] = lapse * s2sq_s3sq * a1;
+  w[5] = lapse * s2sq_s3sq * a2;
   s[0] = 0.0;
 
   // Two waves with EV -lapse - shift1
