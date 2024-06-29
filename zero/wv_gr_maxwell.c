@@ -1,6 +1,5 @@
 #include <stdbool.h>
 #include <math.h>
-#include <stdio.h>
 
 #include <gkyl_alloc.h>
 #include <gkyl_moment_prim_gr_maxwell.h>
@@ -87,8 +86,6 @@ static inline void
 rot_to_global(const double *tau1, const double *tau2, const double *norm,
   const double *GKYL_RESTRICT qlocal, double *GKYL_RESTRICT qglobal)
 {
-  // TODO: Calculate actual norm, tau1, tau2 using contravariant basis vector components
-  
   // Rotate D back to global coordinates
   qglobal[0] = qlocal[0]*norm[0] + qlocal[1]*tau1[0] + qlocal[2]*tau2[0];
   qglobal[1] = qlocal[0]*norm[1] + qlocal[1]*tau1[1] + qlocal[2]*tau2[1];
@@ -160,16 +157,105 @@ qfluct_lax(const struct gkyl_wv_eqn *eqn, enum gkyl_wv_flux_type type,
   double s0m = fmin(0.0, s[0]), s1m = fmin(0.0, s[1]);
   double s0p = fmax(0.0, s[0]), s1p = fmax(0.0, s[1]);
 
-  for (int i=0; i<6; ++i)
+  for (int i = 0; i < 6; ++i)
   {
     amdq[i] = s0m*w0[i] + s1m*w1[i];
     apdq[i] = s0p*w0[i] + s1p*w1[i];
   }
-  for (int i=6; i<10; ++i)
+  for (int i = 6; i < 10; ++i)
   {
     amdq[i] = 0.0;
     apdq[i] = 0.0;
   }
+}
+
+// Case where last two shift vector entries are 0 (and the first may or may not be)
+static double
+wave_zero_s2s3(const double *delta, const double lapse, const double shift1, double *waves, double *s)
+{
+  // compute projections of jump
+  const double a1 = delta[0];
+  const double a2 = delta[3];
+  const double a3 = 0.5*(delta[2] + delta[4]);
+  const double a4 = 0.5*(-delta[1] + delta[5]);
+  const double a5 = 0.5*(-delta[2] + delta[4]);
+  const double a6 = 0.5*(delta[1] + delta[5]);
+  
+  // set waves to 0.0 as most entries vanish
+  for (int i=0; i<10*3; ++i) waves[i] = 0.0;
+
+  double *w = 0;
+
+  // Two waves with EV 0
+  w = &waves[0*10];
+  w[0] = a1;
+  w[3] = a2;
+  s[0] = 0.0;
+
+  // Two waves with EV -lapse - shift1
+  w = &waves[1*10];
+  w[1] = -a4;
+  w[2] = a3;
+  w[4] = a3;
+  w[5] = a4;
+  s[1] = -lapse - shift1;
+
+  // Two waves with EV lapse - shift1
+  w = &waves[2*10];
+  w[1] = a6;
+  w[2] = -a5;
+  w[4] = a5;
+  w[5] = a6;
+  s[2] = lapse - shift1;
+  
+  return fmax(fabs(lapse - shift1), fabs(lapse + shift1));
+}
+
+// Case where the first shift vector entry is 0, and potentially one (but not both) of the other two
+static double
+wave_zero_s1(const double *delta, const double lapse, const double shift2, const double shift3, 
+  double *waves, double *s)
+{
+  // compute projections of jump
+  const double a1 = delta[3];
+  const double a2 = (shift2 == 0.0) ? (shift3/lapse)*delta[0] : (-shift2/lapse)*delta[0];
+  const double a3 = 0.5*((-shift3/lapse)*delta[0] + delta[2] + (-shift2/lapse)*delta[3] + delta[4]);
+  const double a4 = 0.5*((shift2/lapse)*delta[0] - delta[1] + (-shift3/lapse)*delta[3] + delta[5]);
+  const double a5 = 0.5*((-shift3/lapse)*delta[0] - delta[2] + (shift2/lapse)*delta[3] + delta[4]);
+  const double a6 = 0.5*((shift2/lapse)*delta[0] + delta[1] + (shift3/lapse)*delta[3] + delta[5]);
+
+  // set waves to 0.0 as most entries vanish
+  for (int i=0; i<10*3; ++i) waves[i] = 0.0;
+
+  double *w = 0;
+
+  // Two waves with EV 0
+  w = &waves[0*10];
+  w[0] = (shift2 == 0.0) ? (lapse / shift3 * a2) : (-lapse / shift2 * a2);
+  w[1] = -shift3 / lapse * a1;
+  w[2] = shift2 / lapse * a1;
+  w[3] = a1;
+  w[4] = (shift2 == 0.0) ? a2 : (-shift3 / shift2 * a2);
+  w[5] = (shift2 == 0.0) ? 0.0 : a2;
+  s[0] = 0.0;
+
+  // Two waves with EV -lapse
+  w = &waves[1*10];
+  w[1] = -a4;
+  w[2] = a3;
+  w[4] = a3;
+  w[5] = a4;
+  s[1] = -lapse;
+
+  // Two waves with EV lapse
+  w = &waves[2*10];
+  w[1] = a6;
+  w[2] = -a5;
+  w[4] = a5;
+  w[5] = a6;
+  s[2] = lapse;
+  
+  return fabs(lapse);
 }
 
 static double
@@ -179,8 +265,6 @@ wave(const struct gkyl_wv_eqn *eqn, enum gkyl_wv_flux_type type,
 {
   const struct wv_gr_maxwell *gr_maxwell = container_of(eqn, struct wv_gr_maxwell, eqn);
 
-  //double c = maxwell->c, c1 = 1.0/c;
-  //double e_fact = maxwell->e_fact, b_fact = maxwell->b_fact;
   const double lapse = 0.5*(ql[6] + qr[6]);
   const double shift1 = 0.5*(ql[7] + qr[7]);
   const double shift2 = 0.5*(ql[8] + qr[8]);
@@ -191,8 +275,18 @@ wave(const struct gkyl_wv_eqn *eqn, enum gkyl_wv_flux_type type,
   const double s2sq_s3sq = shift2*shift2 + shift3*shift3;
   const double ls3sq_s1s2sq = lapse*lapse * shift3*shift3 + shift1*shift1 * shift2*shift2;
   
-  // TODO: need to handle cases wher ev2 = 0, ev3 = 0, shift1 = 0, shift2 = shift3 = 0
-  // Do we need to worry about the waves with speed 0?
+  // KE: should we also handle cases where ev2 = 0, ev3 = 0?
+  
+  if (s2sq_s3sq == 0.0)
+  {
+    // This one should be first, since it also accounts for zero shift1 if needed
+    return wave_zero_s2s3(delta, lapse, shift1, waves, s);
+  }
+  else if (shift1 == 0.0)
+  {
+    // Accounts also for either zero shift2 or shift3 being zero, but not both
+    return wave_zero_s1(delta, lapse, shift2, shift3, waves, s);
+  }
     
   // compute projections of jump
   const double a1 = ((-shift3/(shift1*ev_prod*s2sq_s3sq))*delta[0] + (shift2/(lapse*ev_prod*s2sq_s3sq))*delta[3]);
@@ -245,14 +339,49 @@ qfluct(const struct gkyl_wv_eqn *eqn, enum gkyl_wv_flux_type type,
   double s0m = fmin(0.0, s[0]), s1m = fmin(0.0, s[1]), s2m = fmin(0.0, s[2]);
   double s0p = fmax(0.0, s[0]), s1p = fmax(0.0, s[1]), s2p = fmax(0.0, s[2]);
 
-  for (int i=0; i<6; ++i) {
+  for (int i=0; i<6; ++i)
+  {
     amdq[i] = s0m*w0[i] + s1m*w1[i] + s2m*w2[i];
     apdq[i] = s0p*w0[i] + s1p*w1[i] + s2p*w2[i];
   }
   
-  for (int i=6; i<10; ++i) {
+  for (int i=6; i<10; ++i)
+  {
     amdq[i] = 0.0;
     apdq[i] = 0.0;
+  }
+}
+
+static void
+ffluct(const struct gkyl_wv_eqn *eqn, enum gkyl_wv_flux_type type,
+  const double *ql, const double *qr, const double *waves, const double *s,
+  double *amdq, double *apdq)
+{
+  for (int i=0; i<10; ++i)
+  {
+    amdq[i] = 0.0;
+    apdq[i] = 0.0;
+  }
+  
+  for (int i=0; i<3; ++i)
+  {
+    for (int j=0; j<6; ++j)
+    {
+      if (s[i] < 0.0)
+      {
+        amdq[j] += waves[i*10 + j];
+      }
+      else if (s[i] > 0.0)
+      {
+        apdq[j] += waves[i*10 + j];
+      }
+      else
+      {
+        const double cor = 0.5*waves[i*10 + j];
+        amdq[j] += cor;
+        apdq[j] += cor;
+      }
+    }
   }
 }
 
@@ -291,6 +420,7 @@ gkyl_wv_gr_maxwell_new(enum gkyl_wv_gr_maxwell_rp rp_type)
     gr_maxwell->eqn.num_waves = 3;
     gr_maxwell->eqn.waves_func = wave;
     gr_maxwell->eqn.qfluct_func = qfluct;
+    gr_maxwell->eqn.ffluct_func = ffluct;
   }
   else if(rp_type == WV_GR_MAXWELL_RP_LAX)
   {
