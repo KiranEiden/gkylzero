@@ -9,7 +9,7 @@
  * @param q Conserved variables
  * @return Maximum absolute speed for given q
  */
-double gkyl_gr_maxwell_max_abs_speed(const double q[10]);
+double gkyl_gr_maxwell_max_abs_speed(const double q[11]);
 
 /**
  * Compute flux.
@@ -20,4 +20,4 @@ double gkyl_gr_maxwell_max_abs_speed(const double q[10]);
  * @param Conserved variables
  * @param flux On output, the flux in direction 'dir'
  */
-void gkyl_gr_maxwell_flux(const double q[10], double flux[10]);
+void gkyl_gr_maxwell_flux(const double q[11], double flux[11]);

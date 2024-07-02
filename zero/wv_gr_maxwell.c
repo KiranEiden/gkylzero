@@ -5,6 +5,10 @@
 #include <gkyl_moment_prim_gr_maxwell.h>
 #include <gkyl_wv_gr_maxwell.h>
 
+#ifndef GR_MAXWELL_EPS
+#define GR_MAXWELL_EPS 1e-16
+#endif
+
 struct wv_gr_maxwell {
   struct gkyl_wv_eqn eqn; // base object
   //double c; // light speed
@@ -24,7 +28,7 @@ cons_to_riem(const struct gkyl_wv_eqn *eqn,
   const double *qstate, const double *qin, double *wout)
 {
   // TODO: this should use proper L matrix
-  for (int i=0; i<10; ++i)
+  for (int i=0; i<11; ++i)
     wout[i] = qin[i];
 }
 static inline void
@@ -32,7 +36,7 @@ riem_to_cons(const struct gkyl_wv_eqn *eqn,
   const double *qstate, const double *win, double *qout)
 {
   // TODO: this should use proper L matrix
-  for (int i=0; i<10; ++i)
+  for (int i=0; i<11; ++i)
     qout[i] = win[i];
 }
 
@@ -76,6 +80,8 @@ rot_to_local(const double *tau1, const double *tau2, const double *norm,
   qlocal[7] = qglobal[7]*norm[0] + qglobal[8]*norm[1] + qglobal[9]*norm[2];
   qlocal[8] = qglobal[7]*tau1[0] + qglobal[8]*tau1[1] + qglobal[9]*tau1[2];
   qlocal[9] = qglobal[7]*tau2[0] + qglobal[8]*tau2[1] + qglobal[9]*tau2[2];
+  // Copy the in_excision_region variable
+  qlocal[10] = qglobal[10];
   
   // Correction potentials are scalars and unchanged
   //qlocal[6] = qglobal[6];
@@ -100,6 +106,8 @@ rot_to_global(const double *tau1, const double *tau2, const double *norm,
   qglobal[7] = qlocal[7]*norm[0] + qlocal[8]*tau1[0] + qlocal[9]*tau2[0];
   qglobal[8] = qlocal[7]*norm[1] + qlocal[8]*tau1[1] + qlocal[9]*tau2[1];
   qglobal[9] = qlocal[7]*norm[2] + qlocal[8]*tau1[2] + qlocal[9]*tau2[2];
+  // Copy the in_excision_region variable
+  qglobal[10] = qlocal[10];
   
   // Correction potentials are scalars and unchanged
   //qglobal[6] = qlocal[6];
@@ -109,11 +117,18 @@ rot_to_global(const double *tau1, const double *tau2, const double *norm,
 static double
 flux_jump(const struct gkyl_wv_eqn *eqn, const double *ql, const double *qr, double *flux_jump)
 {
-  double fr[10], fl[10];
+  bool in_excision_region = (ql[10] < GR_MAXWELL_EPS) || (qr[10] < GR_MAXWELL_EPS);
+  if (in_excision_region)
+  {
+    for (int m=0; m<11; ++m) flux_jump[m] = 0.0;
+    return GR_MAXWELL_EPS;
+  }
+  
+  double fr[11], fl[11];
   gkyl_gr_maxwell_flux(ql, fl);
   gkyl_gr_maxwell_flux(qr, fr);
 
-  for (int m=0; m<10; ++m) flux_jump[m] = fr[m]-fl[m];
+  for (int m=0; m<11; ++m) flux_jump[m] = fr[m]-fl[m];
 
   return fmax(gkyl_gr_maxwell_max_abs_speed(ql), gkyl_gr_maxwell_max_abs_speed(qr));
 }
@@ -123,13 +138,21 @@ wave_lax(const struct gkyl_wv_eqn *eqn, enum gkyl_wv_flux_type type,
   const double *delta, const double *ql, const double *qr, 
   double *waves, double *s)
 {
-  double df[10];
+  bool in_excision_region = (ql[10] < GR_MAXWELL_EPS) || (qr[10] < GR_MAXWELL_EPS);
+  if (in_excision_region)
+  {
+    for (int i=0; i<11*2; ++i) waves[i] = 0.0;
+    s[0] = s[1] = 0.0;
+    return GR_MAXWELL_EPS;
+  }
+  
+  double df[11];
   flux_jump(eqn, ql, qr, df);
   double max_spd_l = fmax(fabs(ql[6] - ql[7]), fabs(ql[6] + ql[7]));
   double max_spd_r = fmax(fabs(qr[6] - qr[7]), fabs(qr[6] + qr[7]));
   double max_spd = fmax(max_spd_l, max_spd_r);
   
-  double *w0 = &waves[0]; double *w1 = &waves[10];
+  double *w0 = &waves[0]; double *w1 = &waves[11];
   
   for (int i = 0; i < 6; ++i)
   {
@@ -137,7 +160,7 @@ wave_lax(const struct gkyl_wv_eqn *eqn, enum gkyl_wv_flux_type type,
     w1[i] = 0.5*((qr[i] - ql[i]) + df[i]/max_spd);
   }
   
-  for (int i = 6; i < 10; ++i)
+  for (int i = 6; i < 11; ++i)
   {
     w0[i] = w1[i] = 0.0;
   }
@@ -153,7 +176,7 @@ qfluct_lax(const struct gkyl_wv_eqn *eqn, enum gkyl_wv_flux_type type,
   const double *ql, const double *qr, const double *waves, const double *s,
   double *amdq, double *apdq)
 {
-  const double *w0 = &waves[0], *w1 = &waves[10];
+  const double *w0 = &waves[0], *w1 = &waves[11];
   double s0m = fmin(0.0, s[0]), s1m = fmin(0.0, s[1]);
   double s0p = fmax(0.0, s[0]), s1p = fmax(0.0, s[1]);
 
@@ -162,7 +185,7 @@ qfluct_lax(const struct gkyl_wv_eqn *eqn, enum gkyl_wv_flux_type type,
     amdq[i] = s0m*w0[i] + s1m*w1[i];
     apdq[i] = s0p*w0[i] + s1p*w1[i];
   }
-  for (int i = 6; i < 10; ++i)
+  for (int i = 6; i < 11; ++i)
   {
     amdq[i] = 0.0;
     apdq[i] = 0.0;
@@ -182,18 +205,18 @@ wave_zero_s2s3(const double *delta, const double lapse, const double shift1, dou
   const double a6 = 0.5*(delta[1] + delta[5]);
   
   // set waves to 0.0 as most entries vanish
-  for (int i=0; i<10*3; ++i) waves[i] = 0.0;
+  for (int i=0; i<11*3; ++i) waves[i] = 0.0;
 
   double *w = 0;
 
   // Two waves with EV 0
-  w = &waves[0*10];
+  w = &waves[0*11];
   w[0] = a1;
   w[3] = a2;
   s[0] = 0.0;
 
   // Two waves with EV -lapse - shift1
-  w = &waves[1*10];
+  w = &waves[1*11];
   w[1] = -a4;
   w[2] = a3;
   w[4] = a3;
@@ -201,7 +224,7 @@ wave_zero_s2s3(const double *delta, const double lapse, const double shift1, dou
   s[1] = -lapse - shift1;
 
   // Two waves with EV lapse - shift1
-  w = &waves[2*10];
+  w = &waves[2*11];
   w[1] = a6;
   w[2] = -a5;
   w[4] = a5;
@@ -216,6 +239,8 @@ static double
 wave_zero_s1(const double *delta, const double lapse, const double shift2, const double shift3, 
   double *waves, double *s)
 {
+  bool no_s2 = fabs(shift2) < GR_MAXWELL_EPS;
+  
   // compute projections of jump
   const double a1 = delta[3];
   const double a2 = (shift2 == 0.0) ? (shift3/lapse)*delta[0] : (-shift2/lapse)*delta[0];
@@ -225,22 +250,22 @@ wave_zero_s1(const double *delta, const double lapse, const double shift2, const
   const double a6 = 0.5*((shift2/lapse)*delta[0] + delta[1] + (shift3/lapse)*delta[3] + delta[5]);
 
   // set waves to 0.0 as most entries vanish
-  for (int i=0; i<10*3; ++i) waves[i] = 0.0;
+  for (int i=0; i<11*3; ++i) waves[i] = 0.0;
 
   double *w = 0;
 
   // Two waves with EV 0
-  w = &waves[0*10];
-  w[0] = (shift2 == 0.0) ? (lapse / shift3 * a2) : (-lapse / shift2 * a2);
+  w = &waves[0*11];
+  w[0] = no_s2 ? (lapse / shift3 * a2) : (-lapse / shift2 * a2);
   w[1] = -shift3 / lapse * a1;
   w[2] = shift2 / lapse * a1;
   w[3] = a1;
-  w[4] = (shift2 == 0.0) ? a2 : (-shift3 / shift2 * a2);
-  w[5] = (shift2 == 0.0) ? 0.0 : a2;
+  w[4] = no_s2 ? a2 : (-shift3 / shift2 * a2);
+  w[5] = no_s2 ? 0.0 : a2;
   s[0] = 0.0;
 
   // Two waves with EV -lapse
-  w = &waves[1*10];
+  w = &waves[1*11];
   w[1] = -a4;
   w[2] = a3;
   w[4] = a3;
@@ -248,7 +273,7 @@ wave_zero_s1(const double *delta, const double lapse, const double shift2, const
   s[1] = -lapse;
 
   // Two waves with EV lapse
-  w = &waves[2*10];
+  w = &waves[2*11];
   w[1] = a6;
   w[2] = -a5;
   w[4] = a5;
@@ -264,6 +289,14 @@ wave(const struct gkyl_wv_eqn *eqn, enum gkyl_wv_flux_type type,
   double *waves, double *s)
 {
   const struct wv_gr_maxwell *gr_maxwell = container_of(eqn, struct wv_gr_maxwell, eqn);
+  
+  bool in_excision_region = (ql[10] < GR_MAXWELL_EPS) || (qr[10] < GR_MAXWELL_EPS);
+  if (in_excision_region)
+  {
+    for (int i=0; i<11*3; ++i) waves[i] = 0.0;
+    s[0] = s[1] = s[2] = 0.0;
+    return GR_MAXWELL_EPS;
+  }
 
   const double lapse = 0.5*(ql[6] + qr[6]);
   const double shift1 = 0.5*(ql[7] + qr[7]);
@@ -277,12 +310,12 @@ wave(const struct gkyl_wv_eqn *eqn, enum gkyl_wv_flux_type type,
   
   // KE: should we also handle cases where ev2 = 0, ev3 = 0?
   
-  if (s2sq_s3sq == 0.0)
+  if (fabs(s2sq_s3sq) < GR_MAXWELL_EPS)
   {
     // This one should be first, since it also accounts for zero shift1 if needed
     return wave_zero_s2s3(delta, lapse, shift1, waves, s);
   }
-  else if (shift1 == 0.0)
+  else if (fabs(shift1) < GR_MAXWELL_EPS)
   {
     // Accounts also for either zero shift2 or shift3 being zero, but not both
     return wave_zero_s1(delta, lapse, shift2, shift3, waves, s);
@@ -297,12 +330,12 @@ wave(const struct gkyl_wv_eqn *eqn, enum gkyl_wv_flux_type type,
   const double a6 = 0.5*((shift2/ev3)*delta[0] + delta[1] + (shift3/ev3)*delta[3] + delta[5]);
 
   // set waves to 0.0 as most entries vanish
-  for (int i=0; i<10*3; ++i) waves[i] = 0.0;
+  for (int i=0; i<11*3; ++i) waves[i] = 0.0;
 
   double *w = 0;
 
   // Two waves with EV 0
-  w = &waves[0*10];
+  w = &waves[0*11];
   w[0] = (-shift1*shift3*ev_prod)*a1 + (shift1*shift2*ev_prod)*a2;
   w[1] = (-shift2*shift3*ev_prod)*a1 + ls3sq_s1s2sq*a2;
   w[2] = -ls3sq_s1s2sq*a1 + (shift2*shift3*ev_prod)*a2;
@@ -312,7 +345,7 @@ wave(const struct gkyl_wv_eqn *eqn, enum gkyl_wv_flux_type type,
   s[0] = 0.0;
 
   // Two waves with EV -lapse - shift1
-  w = &waves[1*10];
+  w = &waves[1*11];
   w[1] = -a4;
   w[2] = a3;
   w[4] = a3;
@@ -320,7 +353,7 @@ wave(const struct gkyl_wv_eqn *eqn, enum gkyl_wv_flux_type type,
   s[1] = ev2;
 
   // Two waves with EV lapse - shift1
-  w = &waves[2*10];
+  w = &waves[2*11];
   w[1] = a6;
   w[2] = -a5;
   w[4] = a5;
@@ -335,7 +368,7 @@ qfluct(const struct gkyl_wv_eqn *eqn, enum gkyl_wv_flux_type type,
   const double *ql, const double *qr, const double *waves, const double *s,
   double *amdq, double *apdq)
 {
-  const double *w0 = &waves[0*10], *w1 = &waves[1*10], *w2 = &waves[2*10];
+  const double *w0 = &waves[0*11], *w1 = &waves[1*11], *w2 = &waves[2*11];
   double s0m = fmin(0.0, s[0]), s1m = fmin(0.0, s[1]), s2m = fmin(0.0, s[2]);
   double s0p = fmax(0.0, s[0]), s1p = fmax(0.0, s[1]), s2p = fmax(0.0, s[2]);
 
@@ -345,7 +378,7 @@ qfluct(const struct gkyl_wv_eqn *eqn, enum gkyl_wv_flux_type type,
     apdq[i] = s0p*w0[i] + s1p*w1[i] + s2p*w2[i];
   }
   
-  for (int i=6; i<10; ++i)
+  for (int i=6; i<11; ++i)
   {
     amdq[i] = 0.0;
     apdq[i] = 0.0;
@@ -357,7 +390,7 @@ ffluct(const struct gkyl_wv_eqn *eqn, enum gkyl_wv_flux_type type,
   const double *ql, const double *qr, const double *waves, const double *s,
   double *amdq, double *apdq)
 {
-  for (int i=0; i<10; ++i)
+  for (int i=0; i<11; ++i)
   {
     amdq[i] = 0.0;
     apdq[i] = 0.0;
@@ -369,15 +402,15 @@ ffluct(const struct gkyl_wv_eqn *eqn, enum gkyl_wv_flux_type type,
     {
       if (s[i] < 0.0)
       {
-        amdq[j] += waves[i*10 + j];
+        amdq[j] += waves[i*11 + j];
       }
       else if (s[i] > 0.0)
       {
-        apdq[j] += waves[i*10 + j];
+        apdq[j] += waves[i*11 + j];
       }
       else
       {
-        const double cor = 0.5*waves[i*10 + j];
+        const double cor = 0.5*waves[i*11 + j];
         amdq[j] += cor;
         apdq[j] += cor;
       }
@@ -412,7 +445,7 @@ gkyl_wv_gr_maxwell_new(enum gkyl_wv_gr_maxwell_rp rp_type)
   struct wv_gr_maxwell *gr_maxwell = gkyl_malloc(sizeof(struct wv_gr_maxwell));
 
   gr_maxwell->eqn.type = GKYL_EQN_GR_MAXWELL;
-  gr_maxwell->eqn.num_equations = 10; 
+  gr_maxwell->eqn.num_equations = 11; 
   gr_maxwell->eqn.num_diag = 6; // Dx^2, Dy^2, Dz^2, Bx^2, By^2, Bz^2
   
   if(rp_type == WV_GR_MAXWELL_RP_EIG)
