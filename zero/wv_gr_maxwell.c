@@ -243,7 +243,7 @@ wave_zero_s1(const double *delta, const double lapse, const double shift2, const
   
   // compute projections of jump
   const double a1 = delta[3];
-  const double a2 = (shift2 == 0.0) ? (shift3/lapse)*delta[0] : (-shift2/lapse)*delta[0];
+  const double a2 = no_s2 ? (shift3/lapse)*delta[0] : (-shift2/lapse)*delta[0];
   const double a3 = 0.5*((-shift3/lapse)*delta[0] + delta[2] + (-shift2/lapse)*delta[3] + delta[4]);
   const double a4 = 0.5*((shift2/lapse)*delta[0] - delta[1] + (-shift3/lapse)*delta[3] + delta[5]);
   const double a5 = 0.5*((-shift3/lapse)*delta[0] - delta[2] + (shift2/lapse)*delta[3] + delta[4]);
@@ -258,7 +258,7 @@ wave_zero_s1(const double *delta, const double lapse, const double shift2, const
   w = &waves[0*11];
   w[0] = no_s2 ? (lapse / shift3 * a2) : (-lapse / shift2 * a2);
   w[1] = -shift3 / lapse * a1;
-  w[2] = shift2 / lapse * a1;
+  w[2] = no_s2 ? 0.0 : shift2 / lapse * a1;
   w[3] = a1;
   w[4] = no_s2 ? a2 : (-shift3 / shift2 * a2);
   w[5] = no_s2 ? 0.0 : a2;
@@ -305,12 +305,13 @@ wave(const struct gkyl_wv_eqn *eqn, enum gkyl_wv_flux_type type,
   const double ev2 = -(lapse + shift1); // ev1 is 0
   const double ev3 = lapse - shift1;
   const double ev_prod = ev2*ev3;
-  const double s2sq_s3sq = shift2*shift2 + shift3*shift3;
-  const double ls3sq_s1s2sq = lapse*lapse * shift3*shift3 + shift1*shift1 * shift2*shift2;
+  const double kap1 = shift2*shift2 + shift3*shift3;
+  const double kap2 = lapse*lapse * shift3*shift3 + shift1*shift1 * shift2*shift2;
+  const double kap3 = lapse*lapse * shift2*shift2 + shift1*shift1 * shift3*shift3;
   
   // KE: should we also handle cases where ev2 = 0, ev3 = 0?
   
-  if (fabs(s2sq_s3sq) < GR_MAXWELL_EPS)
+  if (fabs(kap1) < GR_MAXWELL_EPS)
   {
     // This one should be first, since it also accounts for zero shift1 if needed
     return wave_zero_s2s3(delta, lapse, shift1, waves, s);
@@ -322,8 +323,8 @@ wave(const struct gkyl_wv_eqn *eqn, enum gkyl_wv_flux_type type,
   }
     
   // compute projections of jump
-  const double a1 = ((-shift3/(shift1*ev_prod*s2sq_s3sq))*delta[0] + (shift2/(lapse*ev_prod*s2sq_s3sq))*delta[3]);
-  const double a2 = ((shift2/(shift1*ev_prod*s2sq_s3sq))*delta[0] + (shift3/(lapse*ev_prod*s2sq_s3sq))*delta[3]);
+  const double a1 = ((-shift3/(shift1*ev_prod*kap1))*delta[0] + (shift2/(lapse*ev_prod*kap1))*delta[3]);
+  const double a2 = ((shift2/(shift1*ev_prod*kap1))*delta[0] + (shift3/(lapse*ev_prod*kap1))*delta[3]);
   const double a3 = 0.5*((shift3/ev2)*delta[0] + delta[2] + (shift2/ev2)*delta[3] + delta[4]);
   const double a4 = 0.5*((-shift2/ev2)*delta[0] - delta[1] + (shift3/ev2)*delta[3] + delta[5]);
   const double a5 = 0.5*((-shift3/ev3)*delta[0] - delta[2] + (shift2/ev3)*delta[3] + delta[4]);
@@ -337,11 +338,11 @@ wave(const struct gkyl_wv_eqn *eqn, enum gkyl_wv_flux_type type,
   // Two waves with EV 0
   w = &waves[0*11];
   w[0] = (-shift1*shift3*ev_prod)*a1 + (shift1*shift2*ev_prod)*a2;
-  w[1] = (-shift2*shift3*ev_prod)*a1 + ls3sq_s1s2sq*a2;
-  w[2] = -ls3sq_s1s2sq*a1 + (shift2*shift3*ev_prod)*a2;
+  w[1] = (-shift2*shift3*ev_prod)*a1 + kap2*a2;
+  w[2] = -kap3*a1 + (shift2*shift3*ev_prod)*a2;
   w[3] = lapse * ev_prod * (shift2*a1 + shift3*a2);
-  w[4] = lapse * s2sq_s3sq * a1;
-  w[5] = lapse * s2sq_s3sq * a2;
+  w[4] = lapse * shift1 * kap1 * a1;
+  w[5] = lapse * shift1 * kap1 * a2;
   s[0] = 0.0;
 
   // Two waves with EV -lapse - shift1
