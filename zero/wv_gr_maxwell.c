@@ -54,10 +54,16 @@ gr_maxwell_wall(double t, int nc, const double *skin, double * GKYL_RESTRICT gho
   ghost[3] = -skin[3];
   ghost[4] = skin[4];
   ghost[5] = skin[5];
+  
+  ghost[6] = skin[6];
+  ghost[7] = skin[7];
+  ghost[8] = skin[8];
+  ghost[9] = skin[9];
+  ghost[10] = skin[10];
 
   // correction potential
-  ghost[6] = -skin[6];
-  ghost[7] = skin[7];
+  //ghost[6] = -skin[6];
+  //ghost[7] = skin[7];
 }
 
 static inline void
@@ -121,7 +127,7 @@ flux_jump(const struct gkyl_wv_eqn *eqn, const double *ql, const double *qr, dou
   if (in_excision_region)
   {
     for (int m=0; m<11; ++m) flux_jump[m] = 0.0;
-    return GR_MAXWELL_EPS;
+    return 0.0;
   }
   
   double fr[11], fl[11];
@@ -143,7 +149,7 @@ wave_lax(const struct gkyl_wv_eqn *eqn, enum gkyl_wv_flux_type type,
   {
     for (int i=0; i<11*2; ++i) waves[i] = 0.0;
     s[0] = s[1] = 0.0;
-    return GR_MAXWELL_EPS;
+    return 0.0;
   }
   
   double df[11];
@@ -295,7 +301,7 @@ wave(const struct gkyl_wv_eqn *eqn, enum gkyl_wv_flux_type type,
   {
     for (int i=0; i<11*3; ++i) waves[i] = 0.0;
     s[0] = s[1] = s[2] = 0.0;
-    return GR_MAXWELL_EPS;
+    return 0.0;
   }
 
   const double lapse = 0.5*(ql[6] + qr[6]);
