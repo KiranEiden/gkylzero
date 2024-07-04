@@ -652,13 +652,14 @@ test_wv_geom_3d_4()
   struct gkyl_range range, ext_range;
   gkyl_create_grid_ranges(&grid, nghost, &ext_range, &range);
 
-  struct gkyl_wave_coord_maps cmaps =
+  struct gkyl_wave_geom_inp inp =
   {
     .mapc2p = mapc2p_cyl_local,
     .get_cov_basis = get_cyl_cov_basis_local,
-    .get_con_basis = get_cyl_con_basis_local
+    .get_con_basis = get_cyl_con_basis_local,
+    .spacetime = 0
   };
-  struct gkyl_wave_geom *wg = gkyl_wave_geom_from_coord_maps(&grid, &range, &cmaps, &ndim, false);
+  struct gkyl_wave_geom *wg = gkyl_wave_geom_from_wg_inp(&grid, &range, &inp, &ndim, false);
 
   struct gkyl_range_iter iter;
   gkyl_range_iter_init(&iter, &range);
