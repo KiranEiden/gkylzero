@@ -48,6 +48,13 @@ gkyl_vec3_norm(struct gkyl_vec3 a)
   return (struct gkyl_vec3) { .x = { a.x[0]/len, a.x[1]/len, a.x[2]/len } };
 }
 
+// scale by constant
+static inline struct gkyl_vec3
+gkyl_vec3_scale(struct gkyl_vec3 a, double scale)
+{
+  return (struct gkyl_vec3) { .x = { a.x[0]*scale, a.x[1]*scale, a.x[2]*scale } };
+}
+
 // a \dot b
 static inline double
 gkyl_vec3_dot(struct gkyl_vec3 a, struct gkyl_vec3 b)
@@ -63,6 +70,20 @@ gkyl_vec3_cross(struct gkyl_vec3 a, struct gkyl_vec3 b)
       a.x[1]*b.x[2]-a.x[2]*b.x[1],
       a.x[2]*b.x[0]-a.x[0]*b.x[2],
       a.x[0]*b.x[1]-a.x[1]*b.x[0]
+    }
+  };
+}
+
+// a in basis specified by duals of dual[0], dual[1], dual[2]; assumes Euclidean metric
+static inline struct gkyl_vec3
+gkyl_vec3_change_basis(const struct gkyl_vec3 v, const struct gkyl_vec3 dual[3])
+{
+  return (struct gkyl_vec3)
+  { .x =
+    {
+      gkyl_vec3_dot(v, dual[0]),
+      gkyl_vec3_dot(v, dual[1]),
+      gkyl_vec3_dot(v, dual[2])
     }
   };
 }

@@ -10,16 +10,15 @@
 enum gkyl_wave_coord_flag {
   WAVE_COORD_CART = 0, // Cartesian (default)
   WAVE_COORD_CYL, // Cylindrical (r, phi, z) with unit basis; 2D polar if ndim = 2
-  WAVE_COORD_SPH, // Spherical (r, theta, phi) with unit basis
-  //WAVE_COORD_SCHWARZ, // Schwarzschild coordinates
-  //WAVE_COORD_KS, // Kerr-Schild coordinates
+  WAVE_COORD_SPH // Spherical (r, theta, phi) with unit basis
 };
 
-// Functions for coordinate system conversion
-struct gkyl_wave_coord_maps {
+// Functions for handling different coordinate systems and spacetimes
+struct gkyl_wave_geom_inp {
   evalf_t mapc2p; // Map computational to physical coordinates
   evalf3_t get_cov_basis; // Calculate covariant computational basis vectors
   evalf3_t get_con_basis; // Calculate contravariant computational basis vectors
+  struct gkyl_gr_spacetime *spacetime; // Pointer to spacetime struct (if provided, others will be ignored)
 };
 
 // Geometry information for a single cell: recall a cell "owns" the
@@ -63,10 +62,10 @@ gkyl_wave_geom_new(const struct gkyl_rect_grid *grid,
  * Set components of coordinate mapping struct based on predefined coordinate flag.
  *
  * @param cflag Flag for predefined coordinate system
- * @param cmaps Pointer to mapping struct to set up
+ * @param inp Pointer to input struct to set up
  */
 void
-gkyl_wave_coord_maps_from_flag(enum gkyl_wave_coord_flag cflag, struct gkyl_wave_coord_maps *cmaps);
+gkyl_wave_geom_inp_from_flag(enum gkyl_wave_coord_flag cflag, struct gkyl_wave_geom_inp *inp);
 
 /**
  * Create a new wave geometry object from coordinate system flag.
@@ -85,12 +84,12 @@ gkyl_wave_geom_from_coord_flag(const struct gkyl_rect_grid *grid,
  *
  * @param grid Grid on which geometry lives
  * @param range Range on which geometry should be constructed
- * @param cmaps Struct containing mapc2p and basis vector calculation functions.
+ * @param inp Struct containing either mapc2p and basis vector calculation functions or a spacetime struct.
  * @param ctx Context for use in mapping
  */
 struct gkyl_wave_geom*
-gkyl_wave_geom_from_coord_maps(const struct gkyl_rect_grid *grid,
-  struct gkyl_range *range, struct gkyl_wave_coord_maps *cmaps, void *ctx, bool use_gpu);
+gkyl_wave_geom_from_wg_inp(const struct gkyl_rect_grid *grid,
+  struct gkyl_range *range, struct gkyl_wave_geom_inp *inp, void *ctx, bool use_gpu);
 
 /**
  * Create a new wave geometry object that lives on NV-GPU: see new() method
@@ -113,8 +112,8 @@ gkyl_wave_geom_cu_dev_from_coord_flag(const struct gkyl_rect_grid *grid,
  * above for documentation.
  */
 struct gkyl_wave_geom*
-gkyl_wave_geom_cu_dev_from_coord_maps(const struct gkyl_rect_grid *grid,
-  struct gkyl_range *range, struct gkyl_wave_coord_maps *cmaps, void *ctx);
+gkyl_wave_geom_cu_dev_from_wg_inp(const struct gkyl_rect_grid *grid,
+  struct gkyl_range *range, struct gkyl_wave_geom_inp *inp, void *ctx);
 
 /**
  * Acquire pointer to geometry object. The pointer must be released

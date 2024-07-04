@@ -30,37 +30,41 @@ struct gkyl_wave_geom*
 gkyl_wave_geom_new(const struct gkyl_rect_grid *grid, struct gkyl_range *range,
   evalf_t mapc2p, void *ctx, bool use_gpu)
 {
-  struct gkyl_wave_coord_maps cmaps =
+  struct gkyl_wave_geom_inp inp =
   {
     .mapc2p = mapc2p ? mapc2p : nomapc2p,
     .get_cov_basis = get_standard_basis,
-    .get_con_basis = get_standard_basis
+    .get_con_basis = get_standard_basis,
+    .spacetime = 0
   };
-  struct gkyl_wave_geom *wg = gkyl_wave_geom_from_coord_maps(grid, range, &cmaps, ctx, use_gpu);
+  struct gkyl_wave_geom *wg = gkyl_wave_geom_from_wg_inp(grid, range, &inp, ctx, use_gpu);
   return wg;
 }
 
 void
-gkyl_wave_coord_maps_from_flag(enum gkyl_wave_coord_flag cflag, struct gkyl_wave_coord_maps *cmaps)
+gkyl_wave_geom_inp_from_flag(enum gkyl_wave_coord_flag cflag, struct gkyl_wave_geom_inp *inp)
 {
   switch(cflag)
   {
     case WAVE_COORD_CART:
-      cmaps->mapc2p = nomapc2p;
-      cmaps->get_cov_basis = get_standard_basis;
-      cmaps->get_con_basis = get_standard_basis;
+      inp->mapc2p = nomapc2p;
+      inp->get_cov_basis = get_standard_basis;
+      inp->get_con_basis = get_standard_basis;
+      inp->spacetime = 0;
       break;
       
     case WAVE_COORD_CYL:
-      cmaps->mapc2p = mapc2p_cyl;
-      cmaps->get_cov_basis = get_cyl_unit_basis;
-      cmaps->get_con_basis = get_cyl_unit_basis;
+      inp->mapc2p = mapc2p_cyl;
+      inp->get_cov_basis = get_cyl_unit_basis;
+      inp->get_con_basis = get_cyl_unit_basis;
+      inp->spacetime = 0;
       break;
       
     case WAVE_COORD_SPH:
-      cmaps->mapc2p = mapc2p_sph;
-      cmaps->get_cov_basis = get_sph_unit_basis;
-      cmaps->get_con_basis = get_sph_unit_basis;
+      inp->mapc2p = mapc2p_sph;
+      inp->get_cov_basis = get_sph_unit_basis;
+      inp->get_con_basis = get_sph_unit_basis;
+      inp->spacetime = 0;
       break;
   }
 }
@@ -69,19 +73,19 @@ struct gkyl_wave_geom*
 gkyl_wave_geom_from_coord_flag(const struct gkyl_rect_grid *grid, struct gkyl_range *range,
   enum gkyl_wave_coord_flag cflag, void *ctx, bool use_gpu)
 {
-  struct gkyl_wave_coord_maps cmaps;
-  gkyl_wave_coord_maps_from_flag(cflag, &cmaps);
-  struct gkyl_wave_geom *wg = gkyl_wave_geom_from_coord_maps(grid, range, &cmaps, ctx, use_gpu);
+  struct gkyl_wave_geom_inp inp;
+  gkyl_wave_geom_inp_from_flag(cflag, &inp);
+  struct gkyl_wave_geom *wg = gkyl_wave_geom_from_wg_inp(grid, range, &inp, ctx, use_gpu);
   return wg;
 }
 
 struct gkyl_wave_geom*
-gkyl_wave_geom_from_coord_maps(const struct gkyl_rect_grid *grid, struct gkyl_range *range,
-  struct gkyl_wave_coord_maps *cmaps, void *ctx, bool use_gpu)
+gkyl_wave_geom_from_wg_inp(const struct gkyl_rect_grid *grid, struct gkyl_range *range,
+  struct gkyl_wave_geom_inp *inp, void *ctx, bool use_gpu)
 {
 #ifdef GKYL_HAVE_CUDA
   if(use_gpu) {
-    return gkyl_wave_geom_cu_dev_from_coord_maps(grid, range, cmaps, ctx);
+    return gkyl_wave_geom_cu_dev_from_wg_inp(grid, range, inp, ctx);
   } 
 #endif 
 
@@ -103,15 +107,15 @@ gkyl_wave_geom_from_coord_maps(const struct gkyl_rect_grid *grid, struct gkyl_ra
     // compute geometry based on grid dimensions
     switch (grid->ndim) {
       case 1:
-        calc_geom_1d(grid->dx, xc, cmaps, ctx, geo);
+        calc_geom_1d(grid->dx, xc, inp, ctx, geo);
         break;
 
       case 2:
-        calc_geom_2d(grid->dx, xc, cmaps, ctx, geo);
+        calc_geom_2d(grid->dx, xc, inp, ctx, geo);
         break;
 
       case 3:
-        calc_geom_3d(grid->dx, xc, cmaps, ctx, geo);
+        calc_geom_3d(grid->dx, xc, inp, ctx, geo);
         break;
     };
   }

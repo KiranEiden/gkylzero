@@ -9,6 +9,9 @@
 #include <gkyl_evalf_def.h>
 #include <gkyl_range.h>
 #include <gkyl_util.h>
+#include <gkyl_gr_spacetime.h>
+
+#define GKYL_WG_DOT(v1, v2) v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2]
 
 /**
  * Free wave geometry object.
@@ -72,20 +75,6 @@ get_sph_unit_basis(double t, const double *xc, double *e1, double *e2, double *e
   e3[0] = -sinph; e3[1] = cosph; e3[2] = 0.0;
 }
 
-// The vector to transform and the new basis vectors must be represented in the same basis
-static inline struct gkyl_vec3
-gkyl_vec3_change_basis(const struct gkyl_vec3 v, const struct gkyl_vec3 e[3])
-{
-  return (struct gkyl_vec3)
-  { .x =
-    {
-      gkyl_vec3_dot(v, e[0]),
-      gkyl_vec3_dot(v, e[1]),
-      gkyl_vec3_dot(v, e[2])
-    }
-  };
-}
-
 // Computes 1D geometry
 static void
 calc_geom_1d_from_nodes(const double *dx, const double *xlp, const double *xrp,
@@ -103,9 +92,66 @@ calc_geom_1d_from_nodes(const double *dx, const double *xlp, const double *xrp,
 }
 
 static void
-calc_geom_1d(const double *dx, const double *xc, struct gkyl_wave_coord_maps *cmaps,
+calc_geom_1d_from_spacetime(const double *dx, const double* xc,
+  struct gkyl_gr_spacetime *spacetime, struct gkyl_wave_cell_geom *geo)
+{
+  get_standard_basis(0.0, 0, geo->norm_cov[0], geo->tau1_cov[0], geo->tau2_cov[0], 0);
+  get_standard_basis(0.0, 0, geo->norm_con[0], geo->tau1_con[0], geo->tau2_con[0], 0);
+  
+  bool in_excision_region;
+  spacetime->excision_region_func(spacetime, 0.0, xc[0], 0.0, 0.0, &in_excision_region);
+  if (in_excision_region)
+  {
+    geo->kappa = 1.0;
+    geo->lenr[0] = 1.0;
+    return;
+  }
+  
+  // Covariant metric components and determinant
+  double gam_det;
+  double **gam = gkyl_malloc(sizeof(double*[3]));
+  for (int i = 0; i < 3; ++i)
+  {
+    gam[i] = gkyl_malloc(sizeof(double[3]));
+  }
+
+  // Contravariant metric components
+  double **gam_inv = gkyl_malloc(sizeof(double*[3]));
+  for (int i = 0; i < 3; ++i)
+  {
+    gam_inv[i] = gkyl_malloc(sizeof(double[3]));
+  }
+  
+  spacetime->spatial_metric_det_func(spacetime, 0.0, xc[0], 0.0, 0.0, &gam_det);
+  spacetime->spatial_metric_tensor_func(spacetime, 0.0, xc[0]-0.5*dx[0], 0.0, 0.0, &gam);
+  spacetime->spatial_inv_metric_tensor_func(spacetime, 0.0, xc[0]-0.5*dx[0], 0.0, 0.0, &gam_inv);
+    
+  geo->kappa = sqrt(gam_det);
+  geo->lenr[0] = 1.0;
+    
+  geo->norm_con[0][0] = sqrt(gam_inv[0][0]);
+  geo->norm_cov[0][0] = geo->norm_con[0][0] * gam[0][0];
+  
+  for (int i = 0; i < 3; ++i)
+  {
+    gkyl_free(gam[i]);
+    gkyl_free(gam_inv[i]);
+  }
+  gkyl_free(gam);
+  gkyl_free(gam_inv);
+}
+
+static void
+calc_geom_1d(const double *dx, const double *xc, struct gkyl_wave_geom_inp *inp,
     void *ctx, struct gkyl_wave_cell_geom *geo)
 {
+  if (inp->spacetime)
+  {
+    // Setup wave cell geom based on spacetime and ignore other inputs
+    calc_geom_1d_from_spacetime(dx, xc, inp->spacetime, geo);
+    return;
+  }
+  
   double xlc[GKYL_MAX_CDIM], xrc[GKYL_MAX_CDIM];
   double xlp[GKYL_MAX_CDIM], xrp[GKYL_MAX_CDIM];
 
@@ -113,15 +159,15 @@ calc_geom_1d(const double *dx, const double *xc, struct gkyl_wave_coord_maps *cm
   xrc[0] = xc[0]+0.5*dx[0]; // right node
 
   // compute coordinates of left/right nodes
-  cmaps->mapc2p(0.0, xlc, xlp, ctx);
-  cmaps->mapc2p(0.0, xrc, xrp, ctx);
+  inp->mapc2p(0.0, xlc, xlp, ctx);
+  inp->mapc2p(0.0, xrc, xrp, ctx);
   
   struct gkyl_vec3 e_cov[3] = {gkyl_vec3_zeros(), gkyl_vec3_zeros(), gkyl_vec3_zeros()};
-  cmaps->get_cov_basis(0.0, xc, e_cov[0].x, e_cov[1].x, e_cov[2].x, ctx);
+  inp->get_cov_basis(0.0, xc, e_cov[0].x, e_cov[1].x, e_cov[2].x, ctx);
   struct gkyl_vec3 e_con[3] = {gkyl_vec3_zeros(), gkyl_vec3_zeros(), gkyl_vec3_zeros()};
-  cmaps->get_con_basis(0.0, xc, e_con[0].x, e_con[1].x, e_con[2].x, ctx);
+  inp->get_con_basis(0.0, xc, e_con[0].x, e_con[1].x, e_con[2].x, ctx);
 
-  calc_geom_1d_from_nodes(dx, xlp, xrp, cmaps->mapc2p, e_cov, e_con, ctx, geo);
+  calc_geom_1d_from_nodes(dx, xlp, xrp, inp->mapc2p, e_cov, e_con, ctx, geo);
 }
 
 // Computes 2D geometry
@@ -191,9 +237,112 @@ calc_geom_2d_from_nodes(const double *dx, const struct gkyl_vec3 xll_p,
 }
 
 static void
-calc_geom_2d(const double *dx, const double *xc, struct gkyl_wave_coord_maps *cmaps,
+calc_geom_2d_from_spacetime(const double *dx, const double* xc,
+  struct gkyl_gr_spacetime *spacetime, struct gkyl_wave_cell_geom *geo)
+{
+  bool in_excision_region;
+  spacetime->excision_region_func(spacetime, 0.0, xc[0], xc[1], 0.0, &in_excision_region);
+  if (in_excision_region)
+  {
+    geo->kappa = 1.0;
+    for (int e = 0; e < 2; ++e)
+    {
+      geo->lenr[e] = 1.0;
+      get_standard_basis(0.0, 0, geo->norm_cov[e], geo->tau1_cov[e], geo->tau2_cov[e], 0);
+      get_standard_basis(0.0, 0, geo->norm_con[e], geo->tau1_con[e], geo->tau2_con[e], 0);
+    }
+    return;
+  }
+  
+  // Covariant metric components and determinant
+  double gam_det;
+  double **gam = gkyl_malloc(sizeof(double*[3]));
+  for (int i = 0; i < 3; ++i)
+  {
+    gam[i] = gkyl_malloc(sizeof(double[3]));
+  }
+
+  // Contravariant metric components
+  double **gam_inv = gkyl_malloc(sizeof(double*[3]));
+  for (int i = 0; i < 3; ++i)
+  {
+    gam_inv[i] = gkyl_malloc(sizeof(double[3]));
+  }
+  
+  spacetime->spatial_metric_det_func(spacetime, 0.0, xc[0], xc[1], xc[2], &gam_det);
+  geo->kappa = sqrt(gam_det);
+  
+  // Permutations of indices to use when calculating triads (biads?)
+  int ind[2][2] =
+  {
+    {0, 1},
+    {1, 0}
+  };
+  
+  // Coordinates to evaluate metric at (will be center of edge)
+  double eval_x[2];
+  
+  for (int edge_idx = 0; edge_idx < 2; ++edge_idx)
+  {
+    int i = ind[edge_idx][0], j = ind[edge_idx][1];
+    
+    eval_x[0] = xc[0]; eval_x[1] = xc[1];
+    eval_x[edge_idx] -= 0.5*dx[edge_idx];
+    
+    spacetime->spatial_metric_tensor_func(spacetime, 0.0, eval_x[0], eval_x[1], 0.0, &gam);
+    spacetime->spatial_inv_metric_tensor_func(spacetime, 0.0, eval_x[0], eval_x[1], 0.0, &gam_inv);
+    
+    // Sqrt of determinant of restricted spatial metric tensor
+    geo->lenr[edge_idx] = sqrt(gam[j][j]);
+    
+    // Contravariant components of orthonormal basis vectors
+    double norm_con[3];
+    double tau1_con[3];
+    double tau2[3];
+    
+    norm_con[0] = gam_inv[i][0] / sqrt(gam_inv[i][i]);
+    norm_con[1] = gam_inv[i][1] / sqrt(gam_inv[i][i]);
+    norm_con[2] = 0.0;
+    
+    tau1_con[i] = tau1_con[2] = 0.0;
+    tau1_con[j] = 1. / sqrt(gam[j][j]);
+    
+    tau2[i] = 0.0;
+    tau2[j] = 0.0;
+    tau2[2] = 1.0 - 2.0*i; // Matches other geometry function
+    
+    for (int d = 0; d < 3; ++d)
+    {
+      geo->norm_cov[edge_idx][d] = GKYL_WG_DOT(norm_con, gam[d]);
+      geo->tau1_cov[edge_idx][d] = GKYL_WG_DOT(tau1_con, gam[d]);
+      geo->tau2_cov[edge_idx][d] = tau2[d];
+      
+      geo->norm_con[edge_idx][d] = norm_con[d];
+      geo->tau1_con[edge_idx][d] = tau1_con[d];
+      geo->tau2_con[edge_idx][d] = tau2[d];
+    }
+  }
+  
+  for (int i = 0; i < 3; ++i)
+  {
+    gkyl_free(gam[i]);
+    gkyl_free(gam_inv[i]);
+  }
+  gkyl_free(gam);
+  gkyl_free(gam_inv);
+}
+
+static void
+calc_geom_2d(const double *dx, const double *xc, struct gkyl_wave_geom_inp *inp,
     void *ctx, struct gkyl_wave_cell_geom *geo)
 {
+  if (inp->spacetime)
+  {
+    // Setup wave cell geom based on spacetime and ignore other inputs
+    calc_geom_2d_from_spacetime(dx, xc, inp->spacetime, geo);
+    return;
+  }
+  
   // ll: lower-left; lr: lower-right
   // ul: upper-left; ur: upper-right
   
@@ -208,20 +357,20 @@ calc_geom_2d(const double *dx, const double *xc, struct gkyl_wave_coord_maps *cm
   struct gkyl_vec3 xul_c = gkyl_vec3_new(xc[0] - 0.5*dx[0],  xc[1] + 0.5*dx[1], 0.0);
   struct gkyl_vec3 xur_c = gkyl_vec3_new(xc[0] + 0.5*dx[0],  xc[1] + 0.5*dx[1], 0.0);
   
-  cmaps->mapc2p(0.0, xll_c.x, xll_p.x, ctx);
-  cmaps->mapc2p(0.0, xlr_c.x, xlr_p.x, ctx);
-  cmaps->mapc2p(0.0, xul_c.x, xul_p.x, ctx);
-  cmaps->mapc2p(0.0, xur_c.x, xur_p.x, ctx);
+  inp->mapc2p(0.0, xll_c.x, xll_p.x, ctx);
+  inp->mapc2p(0.0, xlr_c.x, xlr_p.x, ctx);
+  inp->mapc2p(0.0, xul_c.x, xul_p.x, ctx);
+  inp->mapc2p(0.0, xur_c.x, xur_p.x, ctx);
   
   struct gkyl_vec3 e_cov[3] = {gkyl_vec3_zeros(), gkyl_vec3_zeros(), gkyl_vec3_zeros()};
-  cmaps->get_cov_basis(0.0, xc, e_cov[0].x, e_cov[1].x, e_cov[2].x, ctx);
+  inp->get_cov_basis(0.0, xc, e_cov[0].x, e_cov[1].x, e_cov[2].x, ctx);
   struct gkyl_vec3 e_con[3] = {gkyl_vec3_zeros(), gkyl_vec3_zeros(), gkyl_vec3_zeros()};
-  cmaps->get_con_basis(0.0, xc, e_con[0].x, e_con[1].x, e_con[2].x, ctx);
+  inp->get_con_basis(0.0, xc, e_con[0].x, e_con[1].x, e_con[2].x, ctx);
 
   // need to set the final coordinate to 0.0
   xll_p.x[2] = xlr_p.x[2] = xul_p.x[2] = xur_p.x[2] = 0.0;
 
-  calc_geom_2d_from_nodes(dx, xll_p, xlr_p, xul_p, xur_p, cmaps->mapc2p, e_cov, e_con, ctx, geo);
+  calc_geom_2d_from_nodes(dx, xll_p, xlr_p, xul_p, xur_p, inp->mapc2p, e_cov, e_con, ctx, geo);
 }
 
 // Computes 3D geometry
@@ -429,9 +578,117 @@ calc_geom_3d_from_nodes(const double *dx, struct gkyl_vec3 verts[8],
 }
 
 static void
-calc_geom_3d(const double *dx, const double *xc, struct gkyl_wave_coord_maps *cmaps,
+calc_geom_3d_from_spacetime(const double *dx, const double* xc,
+  struct gkyl_gr_spacetime *spacetime, struct gkyl_wave_cell_geom *geo)
+{
+  bool in_excision_region;
+  spacetime->excision_region_func(spacetime, 0.0, xc[0], xc[1], xc[2], &in_excision_region);
+  if (in_excision_region)
+  {
+    geo->kappa = 1.0;
+    for (int e = 0; e < 3; ++e)
+    {
+      geo->lenr[e] = 1.0;
+      for (int d = 0; d < 3; ++d)
+      {
+        get_standard_basis(0.0, 0, geo->norm_cov[e], geo->tau1_cov[e], geo->tau2_cov[e], 0);
+        get_standard_basis(0.0, 0, geo->norm_con[e], geo->tau1_con[e], geo->tau2_con[e], 0);
+      }
+    }
+    return;
+  }
+  
+  // Covariant metric components and determinant
+  double gam_det;
+  double **gam = gkyl_malloc(sizeof(double*[3]));
+  for (int i = 0; i < 3; ++i)
+  {
+    gam[i] = gkyl_malloc(sizeof(double[3]));
+  }
+
+  // Contravariant metric components
+  double **gam_inv = gkyl_malloc(sizeof(double*[3]));
+  for (int i = 0; i < 3; ++i)
+  {
+    gam_inv[i] = gkyl_malloc(sizeof(double[3]));
+  }
+  
+  spacetime->spatial_metric_det_func(spacetime, 0.0, xc[0], xc[1], xc[2], &gam_det);
+  geo->kappa = sqrt(gam_det);
+  
+  // Permutations of indices to use when calculating triads
+  int ind[3][3] =
+  {
+    {0, 1, 2},
+    {1, 0, 2},
+    {2, 0, 1}
+  };
+  
+  // Coordinates to evaluate metric at (will be center of face)
+  double eval_x[3];
+  
+  for (int face_idx = 0; face_idx < 3; ++face_idx)
+  {
+    int i = ind[face_idx][0], j = ind[face_idx][1], k = ind[face_idx][2];
+    
+    eval_x[0] = xc[0]; eval_x[1] = xc[1]; eval_x[2] = xc[2];
+    eval_x[face_idx] -= 0.5*dx[face_idx];
+    
+    spacetime->spatial_metric_tensor_func(spacetime, 0.0, eval_x[0], eval_x[1], eval_x[2], &gam);
+    spacetime->spatial_inv_metric_tensor_func(spacetime, 0.0, eval_x[0], eval_x[1], eval_x[2], &gam_inv);
+    
+    // Sqrt of determinant of restricted spatial metric tensor
+    geo->lenr[face_idx] = sqrt(gam[j][j]*gam[k][k] - gam[j][k]*gam[k][j]);
+    
+    // Contravariant components of orthonormal basis vectors
+    double norm_con[3];
+    double tau1_con[3];
+    double tau2_con[3];
+    
+    for (int d = 0; d < 3; ++d)
+    {
+      norm_con[d] = gam_inv[i][d] / sqrt(gam_inv[i][i]);
+    }
+    
+    tau1_con[i] = tau1_con[k] = 0.0;
+    tau1_con[j] = 1. / sqrt(gam[j][j]);
+    
+    tau2_con[i] = 0.0;
+    tau2_con[j] = -gam[j][k] / (sqrt(gam[j][j]) * geo->lenr[face_idx]);
+    tau2_con[k] = sqrt(gam[j][j]) / geo->lenr[face_idx];
+    
+    for (int d = 0; d < 3; ++d)
+    {
+      geo->norm_cov[face_idx][d] = GKYL_WG_DOT(norm_con, gam[d]);
+      geo->tau1_cov[face_idx][d] = GKYL_WG_DOT(tau1_con, gam[d]);
+      geo->tau2_cov[face_idx][d] = GKYL_WG_DOT(tau2_con, gam[d]);
+      
+      geo->norm_con[face_idx][d] = norm_con[d];
+      geo->tau1_con[face_idx][d] = tau1_con[d];
+      geo->tau2_con[face_idx][d] = tau2_con[d];
+    }
+  }
+  
+  for (int i = 0; i < 3; ++i)
+  {
+    gkyl_free(gam[i]);
+    gkyl_free(gam_inv[i]);
+  }
+  gkyl_free(gam);
+  gkyl_free(gam_inv);
+}
+
+static void
+calc_geom_3d(const double *dx, const double *xc, struct gkyl_wave_geom_inp *inp,
     void *ctx, struct gkyl_wave_cell_geom *geo)
 {
+  if (inp->spacetime)
+  {
+    // Setup wave cell geom based on spacetime and ignore other inputs
+    calc_geom_3d_from_spacetime(dx, xc, inp->spacetime, geo);
+    return;
+  }
+  
   // get all vertices of the hexahedron; see vol_hexa for their order
   struct gkyl_vec3 verts_c[8] = {
     gkyl_vec3_new(xc[0]-0.5*dx[0], xc[1]-0.5*dx[1], xc[2]-0.5*dx[2]),
@@ -446,13 +703,13 @@ calc_geom_3d(const double *dx, const double *xc, struct gkyl_wave_coord_maps *cm
 
   struct gkyl_vec3 verts[8]; // physical coordinate nodes
   for (int i=0; i<8; ++i)
-    cmaps->mapc2p(0.0, verts_c[i].x, verts[i].x, ctx);
+    inp->mapc2p(0.0, verts_c[i].x, verts[i].x, ctx);
   
   struct gkyl_vec3 e_cov[3] = {gkyl_vec3_zeros(), gkyl_vec3_zeros(), gkyl_vec3_zeros()};
-  cmaps->get_cov_basis(0.0, xc, e_cov[0].x, e_cov[1].x, e_cov[2].x, ctx);
+  inp->get_cov_basis(0.0, xc, e_cov[0].x, e_cov[1].x, e_cov[2].x, ctx);
   struct gkyl_vec3 e_con[3] = {gkyl_vec3_zeros(), gkyl_vec3_zeros(), gkyl_vec3_zeros()};
-  cmaps->get_con_basis(0.0, xc, e_con[0].x, e_con[1].x, e_con[2].x, ctx);
+  inp->get_con_basis(0.0, xc, e_con[0].x, e_con[1].x, e_con[2].x, ctx);
   
-  calc_geom_3d_from_nodes(dx, verts, cmaps->mapc2p, e_cov, e_con, ctx, geo);
+  calc_geom_3d_from_nodes(dx, verts, inp->mapc2p, e_cov, e_con, ctx, geo);
 }
 

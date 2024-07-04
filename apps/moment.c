@@ -77,22 +77,24 @@ gkyl_moment_app_new(struct gkyl_moment *mom)
 
   skin_ghost_ranges_init(&app->skin_ghost, &app->global_ext, ghost);
   
-  bool has_coord_maps = mom->coord_maps.mapc2p && mom->coord_maps.get_cov_basis
-    && mom->coord_maps.get_con_basis;
-  if (has_coord_maps) {
-    app->mapc2p = mom->coord_maps.mapc2p;
+  app->c2p_ctx = app->mapc2p = 0;
+  app->has_mapc2p = mom->wg_inp.mapc2p || mom->coord_flag || mom->mapc2p;
+  
+  if (mom->wg_inp.mapc2p) {
+    app->mapc2p = mom->wg_inp.mapc2p;
   }
   else if (mom->coord_flag) {
-    gkyl_wave_coord_maps_from_flag(mom->coord_flag, &mom->coord_maps);
-    app->mapc2p = mom->coord_maps.mapc2p;
+    struct gkyl_wave_geom_inp wg_inp;
+    gkyl_wave_geom_inp_from_flag(mom->coord_flag, &wg_inp);
+    app->mapc2p = wg_inp.mapc2p;
   }
-  app->c2p_ctx = app->mapc2p = 0;
-  app->has_mapc2p = mom->mapc2p ? true : false;
+  else if (mom->mapc2p) {
+    app->mapc2p = mom->mapc2p;
+  }
 
   if (app->has_mapc2p) {
     // initialize computational to physical space mapping
     app->c2p_ctx = mom->c2p_ctx;
-    app->mapc2p = mom->mapc2p;
 
     // we project mapc2p on p=1 basis functions
     struct gkyl_basis basis;
@@ -100,7 +102,7 @@ gkyl_moment_app_new(struct gkyl_moment *mom)
 
     // initialize DG field representing mapping
     struct gkyl_array *c2p = mkarr(false, ndim*basis.num_basis, app->local_ext.volume);
-    gkyl_eval_on_nodes *ev_c2p = gkyl_eval_on_nodes_new(&app->grid, &basis, ndim, mom->mapc2p, mom->c2p_ctx);
+    gkyl_eval_on_nodes *ev_c2p = gkyl_eval_on_nodes_new(&app->grid, &basis, ndim, app->mapc2p, app->c2p_ctx);
     gkyl_eval_on_nodes_advance(ev_c2p, 0.0, &app->local_ext, c2p);
 
     // write DG projection of mapc2p to file
@@ -113,9 +115,11 @@ gkyl_moment_app_new(struct gkyl_moment *mom)
   }
 
   // create geometry object (no GPU support in fluids right now JJ: 11/26/23)
-  if (has_coord_maps) {
-    app->geom = gkyl_wave_geom_from_coord_maps(&app->grid, &app->local_ext,
-      &mom->coord_maps, app->c2p_ctx, false);
+  bool has_wg_inp = mom->wg_inp.mapc2p && mom->wg_inp.get_con_basis && mom->wg_inp.get_cov_basis;
+  has_wg_inp = has_wg_inp || mom->wg_inp.spacetime;
+  if (has_wg_inp) {
+    app->geom = gkyl_wave_geom_from_wg_inp(&app->grid, &app->local_ext,
+      &mom->wg_inp, app->c2p_ctx, false);
   }
   else if (mom->coord_flag) {
     app->geom = gkyl_wave_geom_from_coord_flag(&app->grid, &app->local_ext,

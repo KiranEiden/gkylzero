@@ -115,7 +115,7 @@ struct gkyl_moment {
   void (*mapc2p)(double t, const double *xc, double *xp, void *ctx);
   // Alternate ways of setting mapc2p and basis for vector quantities
   enum gkyl_wave_coord_flag coord_flag;
-  struct gkyl_wave_coord_maps coord_maps;
+  struct gkyl_wave_geom_inp wg_inp;
 
   double cfl_frac; // CFL fraction to use
 
