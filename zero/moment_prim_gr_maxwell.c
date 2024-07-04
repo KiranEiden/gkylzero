@@ -19,7 +19,7 @@ gkyl_gr_maxwell_max_abs_speed(const double q[11])
 {
   if (q[10] < GR_MAXWELL_EPS)
   {
-    return GR_MAXWELL_EPS;
+    return 0.0;
   }
   
   double spd = 0.0;
