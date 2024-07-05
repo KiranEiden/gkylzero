@@ -296,6 +296,7 @@ calc_geom_2d_from_spacetime(const double *dx, const double* xc,
     geo->lenr[edge_idx] = sqrt(gam[j][j]);
     
     // Contravariant components of orthonormal basis vectors
+    // See Pons et al. 1998 (A&A 339, 638-642); D.S. Bale 2002 (PhD thesis, University of Washington)
     double norm_con[3];
     double tau1_con[3];
     double tau2[3];
@@ -641,6 +642,7 @@ calc_geom_3d_from_spacetime(const double *dx, const double* xc,
     geo->lenr[face_idx] = sqrt(gam[j][j]*gam[k][k] - gam[j][k]*gam[k][j]);
     
     // Contravariant components of orthonormal basis vectors
+    // See Pons et al. 1998 (A&A 339, 638-642); D.S. Bale 2002 (PhD thesis, University of Washington)
     double norm_con[3];
     double tau1_con[3];
     double tau2_con[3];
