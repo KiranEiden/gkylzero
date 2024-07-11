@@ -269,8 +269,32 @@ calc_geom_2d_from_spacetime(const double *dx, const double* xc,
     gam_inv[i] = gkyl_malloc(sizeof(double[3]));
   }
   
-  spacetime->spatial_metric_det_func(spacetime, 0.0, xc[0], xc[1], xc[2], &gam_det);
+  // Set capacity function
+  spacetime->spatial_metric_det_func(spacetime, 0.0, xc[0], xc[1], 0.0, &gam_det);
   geo->kappa = sqrt(gam_det);
+  
+  // Christoffel symbols
+  double ***chr_sym = gkyl_malloc(sizeof(double*[3]));
+  for (int i = 0; i < 3; ++i)
+  {
+    chr_sym[i] = gkyl_malloc(sizeof(double[3]));
+    for (int j = 0; j < 3; ++j)
+    {
+      chr_sym[i][j] = gkyl_malloc(sizeof(double[3]));
+    }
+  }
+  spacetime->spatial_christoffel_func(spacetime, 0.0, xc[0], xc[1], 0.0, 1e-8, 1e-8, 1e-8, &chr_sym);
+  
+  for (int i = 0; i < 3; ++i)
+  {
+    for (int j = 0; j < 3; ++j)
+    {
+      for (int k = 0; k < 3; ++k)
+      {
+        geo->chr_sym[k][i][j] = chr_sym[i][j][k];
+      }
+    }
+  }
   
   // Permutations of indices to use when calculating triads (biads?)
   int ind[2][2] =
@@ -331,6 +355,16 @@ calc_geom_2d_from_spacetime(const double *dx, const double* xc,
   }
   gkyl_free(gam);
   gkyl_free(gam_inv);
+  
+  for (int i = 0; i < 3; ++i)
+  {
+    for (int j = 0; j < 3; ++j)
+    {
+      gkyl_free(chr_sym[i][j]);
+    }
+    gkyl_free(chr_sym[i]);
+  }
+  gkyl_free(chr_sym);
 }
 
 static void

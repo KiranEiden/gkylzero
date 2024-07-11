@@ -67,11 +67,42 @@ gr_maxwell_wall(double t, int nc, const double *skin, double * GKYL_RESTRICT gho
 }
 
 static inline void
+transport_along_coord_line(const double christoffel_k[3][3], const double delt,
+  const double *GKYL_RESTRICT q, double *GKYL_RESTRICT qedge)
+{
+  double P[3][3] =
+  {
+    {1.0 - delt*christoffel_k[0][0], -delt*christoffel_k[0][1], -delt*christoffel_k[0][2]},
+    {-delt*christoffel_k[1][0], 1.0 - delt*christoffel_k[1][1], -delt*christoffel_k[1][2]},
+    {-delt*christoffel_k[2][0], -delt*christoffel_k[2][1], 1.0 - delt*christoffel_k[2][2]}
+  };
+  
+  // Transport D to interface
+  qedge[0] = q[0]*P[0][0] + q[1]*P[0][1] + q[2]*P[0][2];
+  qedge[1] = q[0]*P[1][0] + q[1]*P[1][1] + q[2]*P[1][2];
+  qedge[2] = q[0]*P[2][0] + q[1]*P[2][1] + q[2]*P[2][2];
+  // Transport B to interface
+  qedge[3] = q[3]*P[0][0] + q[4]*P[0][1] + q[5]*P[0][2];
+  qedge[4] = q[3]*P[1][0] + q[4]*P[1][1] + q[5]*P[1][2];
+  qedge[5] = q[3]*P[2][0] + q[4]*P[2][1] + q[5]*P[2][2];
+  // Just copy scalar lapse function
+  qedge[6] = q[6];
+  // Transport beta to interface
+  qedge[7] = q[7]*P[0][0] + q[8]*P[0][1] + q[9]*P[0][2];
+  qedge[8] = q[7]*P[1][0] + q[8]*P[1][1] + q[9]*P[1][2];
+  qedge[9] = q[7]*P[2][0] + q[8]*P[2][1] + q[9]*P[2][2];
+  // Copy the in_excision_region variable
+  qedge[10] = q[10];
+  
+  // Correction potentials are scalars and unchanged
+  //qlocal[6] = qglobal[6];
+  //qlocal[7] = qglobal[7];
+}
+
+static inline void
 rot_to_local(const double *tau1, const double *tau2, const double *norm,
   const double *GKYL_RESTRICT qglobal, double *GKYL_RESTRICT qlocal)
-{
-  // TODO: Calculate actual norm, tau1, tau2 using covariant basis vector components
-  
+{  
   // Rotate D to local coordinates
   qlocal[0] = qglobal[0]*norm[0] + qglobal[1]*norm[1] + qglobal[2]*norm[2];
   qlocal[1] = qglobal[0]*tau1[0] + qglobal[1]*tau1[1] + qglobal[2]*tau1[2];
@@ -374,7 +405,7 @@ static void
 qfluct(const struct gkyl_wv_eqn *eqn, enum gkyl_wv_flux_type type,
   const double *ql, const double *qr, const double *waves, const double *s,
   double *amdq, double *apdq)
-{
+{  
   const double *w0 = &waves[0*11], *w1 = &waves[1*11], *w2 = &waves[2*11];
   double s0m = fmin(0.0, s[0]), s1m = fmin(0.0, s[1]), s2m = fmin(0.0, s[2]);
   double s0p = fmax(0.0, s[0]), s1p = fmax(0.0, s[1]), s2p = fmax(0.0, s[2]);
@@ -476,6 +507,7 @@ gkyl_wv_gr_maxwell_new(enum gkyl_wv_gr_maxwell_rp rp_type)
   gr_maxwell->eqn.flux_jump = flux_jump;
   gr_maxwell->eqn.check_inv_func = check_inv;
   gr_maxwell->eqn.max_speed_func = max_speed;
+  gr_maxwell->eqn.transport_func = transport_along_coord_line;
   gr_maxwell->eqn.rotate_to_local_func = rot_to_local;
   gr_maxwell->eqn.rotate_to_global_func = rot_to_global;
 

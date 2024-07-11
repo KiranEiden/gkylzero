@@ -22,6 +22,10 @@ extern inline bool gkyl_wv_eqn_check_inv(const struct gkyl_wv_eqn *eqn, const do
 
 extern inline double gkyl_wv_eqn_max_speed(const struct gkyl_wv_eqn *eqn, const double *q);
 
+extern inline void gkyl_wv_eqn_transport_along_coord_line(const struct gkyl_wv_eqn *eqn,
+  const double christoffel_k[3][3], const double delt,
+  const double *GKYL_RESTRICT qin, double *GKYL_RESTRICT qout);
+  
 extern inline void gkyl_wv_eqn_rotate_to_local(const struct gkyl_wv_eqn *eqn,
   const double *tau1, const double *tau2, const double *norm,
   const double *GKYL_RESTRICT qglobal, double *GKYL_RESTRICT qlocal);

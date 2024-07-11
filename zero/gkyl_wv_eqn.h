@@ -32,6 +32,10 @@ typedef bool (*wv_check_inv)(const struct gkyl_wv_eqn *eqn, const double *q);
 // Function pointer to compute maximum speed given local state
 typedef double (*wv_max_speed_t)(const struct gkyl_wv_eqn *eqn, const double *q);
 
+// Function pointer to apply parallel transport to state variables
+typedef void (*wv_transport_along_coord_line)(const double christoffel_k[3][3], const double delt,
+  const double *GKYL_RESTRICT qin, double *GKYL_RESTRICT qout);
+
 // Function pointer to rotate conserved variables to local
 // tangent-normal frame: tau1 X tau2 = norm
 typedef void (*wv_rotate_to_local)(const double *tau1, const double *tau2, const double *norm,
@@ -71,6 +75,7 @@ struct gkyl_wv_eqn {
 
   wv_check_inv check_inv_func; // function to check invariant domains
   wv_max_speed_t max_speed_func; // function to compute max-speed
+  wv_transport_along_coord_line transport_func; // function to perform parallel transport
   wv_rotate_to_local rotate_to_local_func; // function to rotate to local frame
   wv_rotate_to_global rotate_to_global_func; // function to rotate to global frame
 
@@ -222,6 +227,26 @@ static inline double
 gkyl_wv_eqn_max_speed(const struct gkyl_wv_eqn *eqn, const double *q)
 {
   return eqn->max_speed_func(eqn, q);
+}
+
+/**
+ * Shift the location where vector quantities in the state are represented using
+ * first-order Taylor expansion. Can be used to account for change in coordinate
+ * basis vectors from cell center to cell edge.
+ *
+ * @param eqn Equation object
+ * @param christoffel_k Spatial Christoffel symbols in transport direction (Gamma^{i}_{j}, third index fixed)
+ * @param delt The change in coordinate along the transport direction (with sign included) 
+ * @param qin The state vector at the starting point (where the Christoffel symbols are evaluated)
+ * @param qout State at new location
+ */
+GKYL_CU_DH
+static inline void
+gkyl_wv_eqn_transport_along_coord_line(const struct gkyl_wv_eqn* eqn,
+  const double christoffel_k[3][3], const double delt,
+  const double *GKYL_RESTRICT qin, double *GKYL_RESTRICT qout)
+{
+  eqn->transport_func(christoffel_k, delt, qin, qout);
 }
 
 /**

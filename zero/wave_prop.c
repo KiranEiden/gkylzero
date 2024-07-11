@@ -266,6 +266,7 @@ gkyl_wave_prop_advance(gkyl_wave_prop *wv,
   double cfla = 0.0, cfl = wv->cfl, cflm = 1.1*cfl;
   double is_cfl_violated = 0.0; // delibrately a double
   
+  double ql_edge[meqn], qr_edge[meqn];
   double ql_local[meqn], qr_local[meqn];
   double fjump_local[meqn];
   double waves_local[meqn*mwaves];
@@ -334,6 +335,7 @@ gkyl_wave_prop_advance(gkyl_wave_prop *wv,
           long sidx = gkyl_ridx(slice_range, i);
 
           const struct gkyl_wave_cell_geom *cg = gkyl_wave_geom_get(wv->geom, idxr);
+          const struct gkyl_wave_cell_geom *cg_l = gkyl_wave_geom_get(wv->geom, idxl);
           double *s = gkyl_array_fetch(wv->speeds, sidx);
           const double *redo_fluct = gkyl_array_cfetch(wv->redo_fluct, sidx);
 
@@ -348,6 +350,12 @@ gkyl_wave_prop_advance(gkyl_wave_prop *wv,
             const double *qinl = gkyl_array_cfetch(qin, lidx);
             const double *qinr = gkyl_array_cfetch(qin, ridx);
 
+            const double delt = 0.5*wv->grid.dx[dir];
+            //gkyl_wv_eqn_transport_along_coord_line(wv->equation,
+              //cg->chr_sym[dir], delt, qinl, ql_edge);
+            //gkyl_wv_eqn_transport_along_coord_line(wv->equation,
+              //cg_l->chr_sym[dir], -delt, qinr, qr_edge);
+            
             gkyl_wv_eqn_rotate_to_local(wv->equation,
               cg->tau1_cov[dir], cg->tau2_cov[dir], cg->norm_cov[dir],
               qinl, ql_local);

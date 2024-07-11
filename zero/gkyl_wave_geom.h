@@ -26,6 +26,7 @@ struct gkyl_wave_geom_inp {
 struct gkyl_wave_cell_geom {
   double kappa; // ratio of cell-volume in phy to comp space
   double lenr[GKYL_MAX_CDIM]; // ratio of face-area in phys to comp space for "lower" faces
+  double chr_sym[GKYL_MAX_CDIM][GKYL_MAX_CDIM][GKYL_MAX_CDIM]; // Spatial Christoffel symbols with last index first 
   // norm[d] is the normal to face perp to direction 'd'
   double norm_cov[GKYL_MAX_CDIM][GKYL_MAX_CDIM]; // Covariant components
   double norm_con[GKYL_MAX_CDIM][GKYL_MAX_CDIM]; // Contravariant components
