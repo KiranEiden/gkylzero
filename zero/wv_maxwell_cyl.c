@@ -94,15 +94,15 @@ static inline void
 rot_to_global(const double *tau1, const double *tau2, const double *norm,
   const double *GKYL_RESTRICT qlocal, double *GKYL_RESTRICT qglobal)
 {
-  // Rotate E back to global coordinates
+  // E-field waves/fluctuations
   qglobal[0] = qlocal[0]*norm[0] + qlocal[1]*tau1[0] + qlocal[2]*tau2[0];
   qglobal[1] = qlocal[0]*norm[1] + qlocal[1]*tau1[1] + qlocal[2]*tau2[1];
   qglobal[2] = qlocal[0]*norm[2] + qlocal[1]*tau1[2] + qlocal[2]*tau2[2];
-  // Rotate B back to global coordinates
+  // B-field waves/fluctuations
   qglobal[3] = qlocal[3]*norm[0] + qlocal[4]*tau1[0] + qlocal[5]*tau2[0];
   qglobal[4] = qlocal[3]*norm[1] + qlocal[4]*tau1[1] + qlocal[5]*tau2[1];
   qglobal[5] = qlocal[3]*norm[2] + qlocal[4]*tau1[2] + qlocal[5]*tau2[2];
-  // Rotate sqrts of metric diagonal back to original values
+  // Waves/fluctuations in sqrts of metric diagonal
   qglobal[6] = qlocal[6]*norm[0] + qlocal[7]*tau1[0] + qlocal[8]*tau2[0];
   qglobal[7] = qlocal[6]*norm[1] + qlocal[7]*tau1[1] + qlocal[8]*tau2[1];
   qglobal[8] = qlocal[6]*norm[2] + qlocal[7]*tau1[2] + qlocal[8]*tau2[2];
