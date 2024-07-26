@@ -271,7 +271,7 @@ gkyl_wave_prop_advance(gkyl_wave_prop *wv,
   double fjump_local[meqn];
   double waves_local[meqn*mwaves];
   double amdq_local[meqn], apdq_local[meqn];
-  double delta[meqn];
+  double delta[meqn], delta_local[meqn];
 
   int idxl[GKYL_MAX_DIM], idxr[GKYL_MAX_DIM];
 
@@ -349,25 +349,28 @@ gkyl_wave_prop_advance(gkyl_wave_prop *wv,
 
             const double *qinl = gkyl_array_cfetch(qin, lidx);
             const double *qinr = gkyl_array_cfetch(qin, ridx);
-
-            const double delt = 0.5*wv->grid.dx[dir];
-            //gkyl_wv_eqn_transport_along_coord_line(wv->equation,
-              //cg->chr_sym[dir], delt, qinl, ql_edge);
-            //gkyl_wv_eqn_transport_along_coord_line(wv->equation,
-              //cg_l->chr_sym[dir], -delt, qinr, qr_edge);
             
+            const double transport_dist = 0.5*wv->grid.dx[dir];
+            gkyl_wv_eqn_transport_along_coord_line(wv->equation,
+              cg_l->chr_sym[dir], transport_dist, qinl, ql_edge);
+            gkyl_wv_eqn_transport_along_coord_line(wv->equation,
+              cg->chr_sym[dir], -transport_dist, qinr, qr_edge);
+              
             gkyl_wv_eqn_rotate_to_local(wv->equation,
               cg->tau1_cov[dir], cg->tau2_cov[dir], cg->norm_cov[dir],
-              qinl, ql_local);
+              ql_edge, ql_local);
             gkyl_wv_eqn_rotate_to_local(wv->equation,
               cg->tau1_cov[dir], cg->tau2_cov[dir], cg->norm_cov[dir],
-              qinr, qr_local);
+              qr_edge, qr_local);
+            //gkyl_wv_eqn_rotate_to_local(wv->equation,
+              //cg->tau1_cov[dir], cg->tau2_cov[dir], cg->norm_cov[dir],
+              //delta, delta_local);
 
             if (wv->split_type == GKYL_WAVE_QWAVE)
-              calc_jump(meqn, ql_local, qr_local, delta);
+              calc_jump(meqn, ql_edge, qr_edge, delta);
             else
-              gkyl_wv_eqn_flux_jump(wv->equation, ql_local, qr_local, delta);
-
+              gkyl_wv_eqn_flux_jump(wv->equation, ql_edge, qr_edge, delta);
+            
             double my_max_speed = gkyl_wv_eqn_waves(wv->equation, ftype, delta,
               ql_local, qr_local, waves_local, s);
             max_speed = max_speed > my_max_speed ? max_speed : my_max_speed;
