@@ -95,13 +95,12 @@ static void
 calc_geom_1d_from_spacetime(const double *dx, const double* xc,
   struct gkyl_gr_spacetime *spacetime, struct gkyl_wave_cell_geom *geo)
 {
-  get_standard_basis(0.0, 0, geo->norm_cov[0], geo->tau1_cov[0], geo->tau2_cov[0], 0);
-  get_standard_basis(0.0, 0, geo->norm_con[0], geo->tau1_con[0], geo->tau2_con[0], 0);
-  
   bool in_excision_region;
   spacetime->excision_region_func(spacetime, 0.0, xc[0], 0.0, 0.0, &in_excision_region);
   if (in_excision_region)
   {
+    get_standard_basis(0.0, 0, geo->norm_cov[0], geo->tau1_cov[0], geo->tau2_cov[0], 0);
+    get_standard_basis(0.0, 0, geo->norm_con[0], geo->tau1_con[0], geo->tau2_con[0], 0);
     geo->kappa = 1.0;
     geo->lenr[0] = 1.0;
     return;
@@ -128,9 +127,34 @@ calc_geom_1d_from_spacetime(const double *dx, const double* xc,
     
   geo->kappa = sqrt(gam_det);
   geo->lenr[0] = 1.0;
+  
+  double norm_con[3];
+  double tau1_con[3];
+  double tau2_con[3];
     
-  geo->norm_con[0][0] = sqrt(gam_inv[0][0]);
-  geo->norm_cov[0][0] = geo->norm_con[0][0] * gam[0][0];
+  for (int d = 0; d < 3; ++d)
+  {
+    norm_con[d] = gam_inv[0][d] / sqrt(gam_inv[0][0]);
+  }
+    
+  tau1_con[0] = tau1_con[2] = 0.0;
+  tau1_con[1] = 1. / sqrt(gam[1][1]);
+    
+  double gam_det_perp = sqrt(gam[1][1]*gam[2][2] - gam[1][2]*gam[2][1]);
+  tau2_con[0] = 0.0;
+  tau2_con[1] = -gam[1][2] / (sqrt(gam[1][1]) * gam_det_perp);
+  tau2_con[2] = sqrt(gam[1][1]) / gam_det_perp;
+  
+  for (int d = 0; d < 3; ++d)
+  {
+    geo->norm_cov[0][d] = GKYL_WG_DOT(norm_con, gam[d]);
+    geo->tau1_cov[0][d] = GKYL_WG_DOT(tau1_con, gam[d]);
+    geo->tau2_cov[0][d] = GKYL_WG_DOT(tau2_con, gam[d]);
+    
+    geo->norm_con[0][d] = norm_con[d];
+    geo->tau1_con[0][d] = tau1_con[d];
+    geo->tau2_con[0][d] = tau2_con[d];
+  }
   
   for (int i = 0; i < 3; ++i)
   {
@@ -273,10 +297,10 @@ calc_geom_2d_from_spacetime(const double *dx, const double* xc,
   geo->kappa = sqrt(gam_det);
   
   // Permutations of indices to use when calculating triads (biads?)
-  int ind[2][2] =
+  int ind[2][3] =
   {
-    {0, 1},
-    {1, 0}
+    {0, 1, 2},
+    {1, 0, 2}
   };
   
   // Coordinates to evaluate metric at (will be center of edge)
@@ -284,7 +308,7 @@ calc_geom_2d_from_spacetime(const double *dx, const double* xc,
   
   for (int edge_idx = 0; edge_idx < 2; ++edge_idx)
   {
-    int i = ind[edge_idx][0], j = ind[edge_idx][1];
+    int i = ind[edge_idx][0], j = ind[edge_idx][1], k = ind[edge_idx][2];
     
     eval_x[0] = xc[0]; eval_x[1] = xc[1];
     eval_x[edge_idx] -= 0.5*dx[edge_idx];
@@ -292,35 +316,38 @@ calc_geom_2d_from_spacetime(const double *dx, const double* xc,
     spacetime->spatial_metric_tensor_func(spacetime, 0.0, eval_x[0], eval_x[1], 0.0, &gam);
     spacetime->spatial_inv_metric_tensor_func(spacetime, 0.0, eval_x[0], eval_x[1], 0.0, &gam_inv);
     
-    // Sqrt of determinant of restricted spatial metric tensor
+    // Sqrt of determinant of restricted spatial metric tensor (2D)
     geo->lenr[edge_idx] = sqrt(gam[j][j]);
+    // Sqrt of determinant of restricted spatial metric tensor (3D)
+    double gam_det_perp = sqrt(gam[j][j]*gam[k][k] - gam[j][k]*gam[k][j]);
     
     // Contravariant components of orthonormal basis vectors
     // See Pons et al. 1998 (A&A 339, 638-642); D.S. Bale 2002 (PhD thesis, University of Washington)
     double norm_con[3];
     double tau1_con[3];
-    double tau2[3];
+    double tau2_con[3];
     
-    norm_con[0] = gam_inv[i][0] / sqrt(gam_inv[i][i]);
-    norm_con[1] = gam_inv[i][1] / sqrt(gam_inv[i][i]);
-    norm_con[2] = 0.0;
+    for (int d = 0; d < 3; ++d)
+    {
+      norm_con[d] = gam_inv[i][d] / sqrt(gam_inv[i][i]);
+    }
     
-    tau1_con[i] = tau1_con[2] = 0.0;
+    tau1_con[i] = tau1_con[k] = 0.0;
     tau1_con[j] = 1. / sqrt(gam[j][j]);
     
-    tau2[i] = 0.0;
-    tau2[j] = 0.0;
-    tau2[2] = 1.0 - 2.0*i; // Matches other geometry function
+    tau2_con[i] = 0.0;
+    tau2_con[j] = -gam[j][k] / (sqrt(gam[j][j]) * gam_det_perp);
+    tau2_con[k] = sqrt(gam[j][j]) / gam_det_perp;
     
     for (int d = 0; d < 3; ++d)
     {
       geo->norm_cov[edge_idx][d] = GKYL_WG_DOT(norm_con, gam[d]);
       geo->tau1_cov[edge_idx][d] = GKYL_WG_DOT(tau1_con, gam[d]);
-      geo->tau2_cov[edge_idx][d] = tau2[d];
+      geo->tau2_cov[edge_idx][d] = GKYL_WG_DOT(tau2_con, gam[d]);;
       
       geo->norm_con[edge_idx][d] = norm_con[d];
       geo->tau1_con[edge_idx][d] = tau1_con[d];
-      geo->tau2_con[edge_idx][d] = tau2[d];
+      geo->tau2_con[edge_idx][d] = tau2_con[d];
     }
   }
   
