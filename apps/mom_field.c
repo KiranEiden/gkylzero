@@ -1,5 +1,4 @@
 #include <gkyl_moment_priv.h>
-#include <stdio.h>
 
 // initialize field
 void
