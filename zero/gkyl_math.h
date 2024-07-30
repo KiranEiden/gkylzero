@@ -48,6 +48,13 @@ gkyl_vec3_norm(struct gkyl_vec3 a)
   return (struct gkyl_vec3) { .x = { a.x[0]/len, a.x[1]/len, a.x[2]/len } };
 }
 
+// scale by constant
+static inline struct gkyl_vec3
+gkyl_vec3_scale(struct gkyl_vec3 a, double scale)
+{
+  return (struct gkyl_vec3) { .x = { a.x[0]*scale, a.x[1]*scale, a.x[2]*scale } };
+}
+
 // a \dot b
 static inline double
 gkyl_vec3_dot(struct gkyl_vec3 a, struct gkyl_vec3 b)
