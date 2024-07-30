@@ -20,7 +20,7 @@ moment_field_init(const struct gkyl_moment *mom, const struct gkyl_moment_field 
 
   double c = 1/sqrt(epsilon0*mu0);
   struct gkyl_wv_eqn *maxwell = mom_fld->maxwell == 0 ? gkyl_wv_maxwell_new(c,
-    mom_fld->elc_error_speed_fact, mom_fld->mag_error_speed_fact) : mom_fld->maxwell;
+    mom_fld->elc_error_speed_fact, mom_fld->mag_error_speed_fact, false) : mom_fld->maxwell;
 
   fld->maxwell = gkyl_wv_eqn_acquire(maxwell);
   fld->num_equations = maxwell->num_equations;
