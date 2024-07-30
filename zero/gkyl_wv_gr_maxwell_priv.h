@@ -8,6 +8,7 @@
 #include <gkyl_eqn_type.h>
 #include <gkyl_range.h>
 #include <gkyl_util.h>
+#include <stdio.h>
 
 struct wv_gr_maxwell {
   struct gkyl_wv_eqn eqn; // base object
@@ -150,60 +151,6 @@ gkyl_gr_maxwell_extrapolate_flux(double c, double e_fact, double b_fact,
   }
   
   for (int i = 6; i < 21; ++i) flux_extrap[i] = 0.0;
-}
-
-// Flux difference for special relativistic Maxwell
-static double
-flux_jump(const struct gkyl_wv_eqn *eqn, const double *ql, const double *qr, double *flux_jump)
-{
-  bool in_excision_region = (ql[20] < 0.0) || (qr[20] < 0.0);
-  if (in_excision_region) {
-    for (int m=0; m<21; ++m) flux_jump[m] = 0.0;
-    return 0.0;
-  }
-  
-  const struct wv_gr_maxwell *maxwell = container_of(eqn, struct wv_gr_maxwell, eqn);
-
-  double c = maxwell->c;
-  double e_fact = maxwell->e_fact, b_fact = maxwell->b_fact;
-
-  double fr[21], fl[21];
-  gkyl_gr_maxwell_flux(c, e_fact, b_fact, ql, fl);
-  gkyl_gr_maxwell_flux(c, e_fact, b_fact, qr, fr);
-
-  for (int m=0; m<21; ++m) flux_jump[m] = fr[m]-fl[m];
-  
-  return c;
-}
-
-// Flux difference for general relativistic Maxwell
-static double
-flux_jump_gr(const struct gkyl_wv_eqn *eqn, const double *ql, const double *qr, double *flux_jump)
-{
-  bool in_excision_region = (ql[20] < 0.0) || (qr[20] < 0.0);
-  if (in_excision_region) {
-    for (int m=0; m<21; ++m) flux_jump[m] = 0.0;
-    return 0.0;
-  }
-  
-  const struct wv_gr_maxwell *maxwell = container_of(eqn, struct wv_gr_maxwell, eqn);
-
-  const double c = maxwell->c;
-  const double e_fact = maxwell->e_fact, b_fact = maxwell->b_fact;
-
-  double fl[21], fr[21];
-  gkyl_gr_maxwell_flux(c, e_fact, b_fact, ql, fl);
-  gkyl_gr_maxwell_flux(c, e_fact, b_fact, qr, fr);
-  
-  double fl_extrap[21], fr_extrap[21];
-  gkyl_gr_maxwell_extrapolate_flux(c, e_fact, b_fact, ql, fl, fl_extrap);
-  gkyl_gr_maxwell_extrapolate_flux(c, e_fact, b_fact, qr, fr, fr_extrap);
-
-  for (int m=0; m<21; ++m) flux_jump[m] = fr_extrap[m]-fl_extrap[m];
-  
-  const double msl = gkyl_gr_maxwell_max_abs_speed(c, e_fact, b_fact, ql);
-  const double msr = gkyl_gr_maxwell_max_abs_speed(c, e_fact, b_fact, qr);
-  return fmax(msl, msr);
 }
 
 static inline void
@@ -354,12 +301,66 @@ rot_to_global(const double *tau1, const double *tau2, const double *norm,
   //qglobal[7] = qlocal[7];
 }
 
+// Flux difference for special relativistic Maxwell
+static double
+flux_jump(const struct gkyl_wv_eqn *eqn, const double *ql, const double *qr, double *flux_jump)
+{
+  bool in_excision_region = (ql[20] < 0.0) || (qr[20] < 0.0);
+  if (in_excision_region) {
+    for (int m=0; m<21; ++m) flux_jump[m] = 0.0;
+    return 0.0;
+  }
+  
+  const struct wv_gr_maxwell *maxwell = container_of(eqn, struct wv_gr_maxwell, eqn);
+
+  double c = maxwell->c;
+  double e_fact = maxwell->e_fact, b_fact = maxwell->b_fact;
+
+  double fr[21], fl[21];
+  gkyl_gr_maxwell_flux(c, e_fact, b_fact, ql, fl);
+  gkyl_gr_maxwell_flux(c, e_fact, b_fact, qr, fr);
+
+  for (int m=0; m<21; ++m) flux_jump[m] = fr[m]-fl[m];
+  
+  return c;
+}
+
+// Flux difference for general relativistic Maxwell
+static double
+flux_jump_gr(const struct gkyl_wv_eqn *eqn, const double *ql, const double *qr, double *flux_jump)
+{
+  bool in_excision_region = (ql[20] < 0.0) || (qr[20] < 0.0);
+  if (in_excision_region) {
+    for (int m=0; m<21; ++m) flux_jump[m] = 0.0;
+    return 0.0;
+  }
+  
+  const struct wv_gr_maxwell *maxwell = container_of(eqn, struct wv_gr_maxwell, eqn);
+
+  const double c = maxwell->c;
+  const double e_fact = maxwell->e_fact, b_fact = maxwell->b_fact;
+
+  double fl[21], fr[21];
+  gkyl_gr_maxwell_flux(c, e_fact, b_fact, ql, fl);
+  gkyl_gr_maxwell_flux(c, e_fact, b_fact, qr, fr);
+  
+  double fl_extrap[21], fr_extrap[21];
+  gkyl_gr_maxwell_extrapolate_flux(c, e_fact, b_fact, ql, fl, fl_extrap);
+  gkyl_gr_maxwell_extrapolate_flux(c, e_fact, b_fact, qr, fr, fr_extrap);
+
+  for (int m=0; m<21; ++m) flux_jump[m] = fr_extrap[m]-fl_extrap[m];
+  
+  const double msl = gkyl_gr_maxwell_max_abs_speed(c, e_fact, b_fact, ql);
+  const double msr = gkyl_gr_maxwell_max_abs_speed(c, e_fact, b_fact, qr);
+  return fmax(msl, msr);
+}
+
 static double
 wave_lax(const struct gkyl_wv_eqn *eqn, enum gkyl_wv_flux_type type,
   const double *delta, const double *ql, const double *qr, 
   double *waves, double *s)
 {
-  bool in_excision_region = (ql[10] < 0.0) || (qr[10] < 0.0);
+  bool in_excision_region = (ql[20] < 0.0) || (qr[20] < 0.0);
   if (in_excision_region) {
     for (int i=0; i<21*2; ++i) waves[i] = 0.0;
     s[0] = s[1] = 0.0;
@@ -385,8 +386,9 @@ wave_lax(const struct gkyl_wv_eqn *eqn, enum gkyl_wv_flux_type type,
   const double gam_33 = 0.5*(ql[19] + qr[19]);
   const double gam_23 = 0.5*(ql[16] + qr[16]);
   const double lenr = sqrt(gam_22*gam_33 - gam_23*gam_23);
+  
   s[0] = -max_spd*lenr;
-  s[1] = -max_spd*lenr;
+  s[1] = max_spd*lenr;
 
   return max_spd;
 }
