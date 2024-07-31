@@ -139,8 +139,8 @@ gkyl_gr_maxwell_extrapolate_flux(double c, double e_fact, double b_fact,
   gkyl_gr_maxwell_lower_ind(&q[7], shift_cov, &q[11]);
   
   flux_extrap[0] = flux_in[0]; // 0 for Maxwell curl equations
-  flux_extrap[1] = lapse*B_cov[2] + rt_gam_det_inv*(shift_cov[1]*D_cov[0] - shift_cov[0]*D_cov[1]);
-  flux_extrap[2] = lapse*B_cov[1] + rt_gam_det_inv*(shift_cov[0]*D_cov[2] - shift_cov[2]*D_cov[0]);
+  flux_extrap[1] = c2 * (lapse*B_cov[2] + rt_gam_det_inv*(shift_cov[1]*D_cov[0] - shift_cov[0]*D_cov[1]));
+  flux_extrap[2] = c2 * (lapse*B_cov[1] + rt_gam_det_inv*(shift_cov[0]*D_cov[2] - shift_cov[2]*D_cov[0]));
   flux_extrap[3] = flux_in[3]; // 0 for Maxwell curl equations
   flux_extrap[4] = lapse*D_cov[2] + rt_gam_det_inv*(shift_cov[0]*B_cov[1] - shift_cov[1]*B_cov[0]);
   flux_extrap[5] = lapse*D_cov[1] + rt_gam_det_inv*(shift_cov[2]*B_cov[0] - shift_cov[0]*B_cov[2]);
