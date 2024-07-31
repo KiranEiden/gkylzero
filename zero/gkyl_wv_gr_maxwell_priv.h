@@ -228,15 +228,15 @@ rot_to_local(const double *tau1, const double *tau2, const double *norm,
   x[7] = (qglobal[17] * tau1[0]) + (qglobal[18] * tau1[1]) + (qglobal[19] * tau1[2]);
   x[8] = (qglobal[17] * tau2[0]) + (qglobal[18] * tau2[1]) + (qglobal[19] * tau2[2]);
   
-  qlocal[11] = (x[0] * norm[0]) + (x[1] * norm[1]) + (x[2] * norm[2]);
-  qlocal[12] = (x[0] * tau1[0]) + (x[1] * tau1[1]) + (x[2] * tau1[2]);
-  qlocal[13] = (x[0] * tau2[0]) + (x[1] * tau2[1]) + (x[2] * tau2[2]);
-  qlocal[14] = (x[3] * norm[0]) + (x[4] * norm[1]) + (x[5] * norm[2]);
-  qlocal[15] = (x[3] * tau1[0]) + (x[4] * tau1[1]) + (x[5] * tau1[2]);
-  qlocal[16] = (x[3] * tau2[0]) + (x[4] * tau2[1]) + (x[5] * tau2[2]);
-  qlocal[17] = (x[6] * norm[0]) + (x[7] * norm[1]) + (x[8] * norm[2]);
-  qlocal[18] = (x[6] * tau1[0]) + (x[7] * tau1[1]) + (x[8] * tau1[2]);
-  qlocal[19] = (x[6] * tau2[0]) + (x[7] * tau2[1]) + (x[8] * tau2[2]);
+  qlocal[11] = (x[0] * norm[0]) + (x[3] * norm[1]) + (x[6] * norm[2]);
+  qlocal[12] = (x[0] * tau1[0]) + (x[3] * tau1[1]) + (x[6] * tau1[2]);
+  qlocal[13] = (x[0] * tau2[0]) + (x[3] * tau2[1]) + (x[6] * tau2[2]);
+  qlocal[14] = (x[1] * norm[0]) + (x[4] * norm[1]) + (x[7] * norm[2]);
+  qlocal[15] = (x[1] * tau1[0]) + (x[4] * tau1[1]) + (x[7] * tau1[2]);
+  qlocal[16] = (x[1] * tau2[0]) + (x[4] * tau2[1]) + (x[7] * tau2[2]);
+  qlocal[17] = (x[2] * norm[0]) + (x[5] * norm[1]) + (x[8] * norm[2]);
+  qlocal[18] = (x[2] * tau1[0]) + (x[5] * tau1[1]) + (x[8] * tau1[2]);
+  qlocal[19] = (x[2] * tau2[0]) + (x[5] * tau2[1]) + (x[8] * tau2[2]);
   
   // Copy in_excision_region flag
   qlocal[20] = qglobal[20];
@@ -283,15 +283,15 @@ rot_to_global(const double *tau1, const double *tau2, const double *norm,
   x[7] = (qglobal[17] * norm[1]) + (qglobal[18] * tau1[1]) + (qglobal[19] * tau2[1]);
   x[8] = (qglobal[17] * norm[2]) + (qglobal[18] * tau1[2]) + (qglobal[19] * tau2[2]);
   
-  qglobal[11] = (x[0] * norm[0]) + (x[1] * tau1[0]) + (x[2] * tau2[0]);
-  qglobal[12] = (x[0] * norm[1]) + (x[1] * tau1[1]) + (x[2] * tau2[1]);
-  qglobal[13] = (x[0] * norm[2]) + (x[1] * tau1[2]) + (x[2] * tau2[2]);
-  qglobal[14] = (x[3] * norm[0]) + (x[4] * tau1[0]) + (x[5] * tau2[0]);
-  qglobal[15] = (x[3] * norm[1]) + (x[4] * tau1[1]) + (x[5] * tau2[1]);
-  qglobal[16] = (x[3] * norm[2]) + (x[4] * tau1[2]) + (x[5] * tau2[2]);
-  qglobal[17] = (x[6] * norm[0]) + (x[7] * tau1[0]) + (x[8] * tau2[0]);
-  qglobal[18] = (x[6] * norm[1]) + (x[7] * tau1[1]) + (x[8] * tau2[1]);
-  qglobal[19] = (x[6] * norm[2]) + (x[7] * tau1[2]) + (x[8] * tau2[2]);
+  qglobal[11] = (x[0] * norm[0]) + (x[3] * tau1[0]) + (x[6] * tau2[0]);
+  qglobal[12] = (x[0] * norm[1]) + (x[3] * tau1[1]) + (x[6] * tau2[1]);
+  qglobal[13] = (x[0] * norm[2]) + (x[3] * tau1[2]) + (x[6] * tau2[2]);
+  qglobal[14] = (x[1] * norm[0]) + (x[4] * tau1[0]) + (x[7] * tau2[0]);
+  qglobal[15] = (x[1] * norm[1]) + (x[4] * tau1[1]) + (x[7] * tau2[1]);
+  qglobal[16] = (x[1] * norm[2]) + (x[4] * tau1[2]) + (x[7] * tau2[2]);
+  qglobal[17] = (x[2] * norm[0]) + (x[5] * tau1[0]) + (x[8] * tau2[0]);
+  qglobal[18] = (x[2] * norm[1]) + (x[5] * tau1[1]) + (x[8] * tau2[1]);
+  qglobal[19] = (x[2] * norm[2]) + (x[5] * tau1[2]) + (x[8] * tau2[2]);
   
   // Copy the in_excision_region flag
   qglobal[20] = qlocal[20];
