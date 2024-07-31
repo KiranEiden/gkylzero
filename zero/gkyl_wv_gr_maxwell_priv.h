@@ -120,34 +120,33 @@ gkyl_gr_maxwell_extrapolate_flux(double c, double e_fact, double b_fact,
   
   const double c2 = c*c;
   const double lapse = q[6];
-  const double rt_gam_det_inv = 1. / q[10];
   
   double D[3], D_cov[3];
   double B[3], B_cov[3];
   double shift_cov[3];
   
-  D[0] = q[0] * rt_gam_det_inv;
+  D[0] = q[0] / q[10];
   D[1] = flux_in[5];
   D[2] = -flux_in[4];
   
-  B[0] = q[3] * rt_gam_det_inv;
-  B[1] = flux_in[1] / c2;
-  B[2] = -flux_in[2] / c2;
+  B[0] = q[3] / q[10];
+  B[1] = -flux_in[2] / c2;
+  B[2] = flux_in[1] / c2;
   
   gkyl_gr_maxwell_lower_ind(D, D_cov, &q[11]);
   gkyl_gr_maxwell_lower_ind(B, B_cov, &q[11]);
   gkyl_gr_maxwell_lower_ind(&q[7], shift_cov, &q[11]);
   
   flux_extrap[0] = flux_in[0]; // 0 for Maxwell curl equations
-  flux_extrap[1] = c2 * (lapse*B_cov[2] + rt_gam_det_inv*(shift_cov[1]*D_cov[0] - shift_cov[0]*D_cov[1]));
-  flux_extrap[2] = c2 * (lapse*B_cov[1] + rt_gam_det_inv*(shift_cov[0]*D_cov[2] - shift_cov[2]*D_cov[0]));
+  flux_extrap[1] = c2 * (lapse*B_cov[2] + (shift_cov[1]*D_cov[0] - shift_cov[0]*D_cov[1]) / q[10]);
+  flux_extrap[2] = -c2 * (lapse*B_cov[1] + (shift_cov[0]*D_cov[2] - shift_cov[2]*D_cov[0]) / q[10]);
   flux_extrap[3] = flux_in[3]; // 0 for Maxwell curl equations
-  flux_extrap[4] = lapse*D_cov[2] + rt_gam_det_inv*(shift_cov[0]*B_cov[1] - shift_cov[1]*B_cov[0]);
-  flux_extrap[5] = lapse*D_cov[1] + rt_gam_det_inv*(shift_cov[2]*B_cov[0] - shift_cov[0]*B_cov[2]);
+  flux_extrap[4] = -(lapse*D_cov[2] + (shift_cov[0]*B_cov[1] - shift_cov[1]*B_cov[0]) / q[10]);
+  flux_extrap[5] = lapse*D_cov[1] + (shift_cov[2]*B_cov[0] - shift_cov[0]*B_cov[2] / q[10]);
   
   // Include cell volume correction here (can be handled in geometry code)?
   for (int i = 0; i < 6; ++i) {
-    flux_extrap[i] *= rt_gam_det_inv;
+    flux_extrap[i] /= q[10];
   }
   
   for (int i = 6; i < 21; ++i) flux_extrap[i] = 0.0;
