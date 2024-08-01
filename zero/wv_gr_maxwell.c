@@ -27,7 +27,7 @@ gkyl_wv_gr_maxwell_new(double c, double e_fact, double b_fact)
   struct wv_gr_maxwell *maxwell = gkyl_malloc(sizeof(struct wv_gr_maxwell));
 
   maxwell->eqn.type = GKYL_EQN_MAXWELL;
-  maxwell->eqn.num_equations = 21;  
+  maxwell->eqn.num_equations = GRM_NEQ;  
   maxwell->eqn.num_waves = 2;
   maxwell->eqn.num_diag = 6; // Ex^2, Ey^2, Ez^2, Bx^2, By^2, Bz^2
   
